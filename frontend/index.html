@@ -206,34 +206,41 @@
       }
     }
 
-    async function uploadPDF() {
-      const file = document.getElementById("pdfFile").files[0];
-      const output = document.getElementById("output");
+async function uploadPDF() {
+  const file = document.getElementById("pdfFile").files[0];
+  const output = document.getElementById("output");
 
-      if (!file) {
-        alert("Choose PDF file");
-        return;
-      }
+  if (!file) {
+    alert("Choose PDF file");
+    return;
+  }
 
-      output.classList.remove("hidden");
-      output.innerHTML = "<p class='text-zinc-400'>Processing PDF...</p>";
+  output.classList.remove("hidden");
+  output.innerHTML = "<p class='text-zinc-400'>Processing PDF...</p>";
 
-      const formData = new FormData();
-      formData.append("file", file);
+  const formData = new FormData();
+  formData.append("file", file);
 
-      try {
-        const res = await fetch(`${BASE_URL}/upload`, {
-          method: "POST",
-          body: formData
-        });
+  try {
+    const res = await fetch(`${BASE_URL}/upload`, {
+      method: "POST",
+      body: formData
+    });
 
-        const data = await res.json();
-        renderOutput(data);
-      } catch (err) {
-        console.log("PDF upload error:", err);
-        output.innerHTML = "<p class='text-red-400'>PDF upload failed</p>";
-      }
+    const data = await res.json();
+
+    if (!res.ok) {
+      output.innerHTML = `<p class='text-red-400'>${data.summary || data.message || "PDF upload failed"}</p>`;
+      return;
     }
+
+    renderOutput(data);
+  } catch (err) {
+    console.log("PDF upload error:", err);
+    output.innerHTML = "<p class='text-red-400'>PDF upload failed</p>";
+  }
+}
+
 
     async function saveSummary() {
       const user = JSON.parse(localStorage.getItem("user"));
