@@ -1,5 +1,5 @@
 const express = require("express");
-const Summary = require("../models/summary");
+const Summary = require("../models/Summary");
 
 const router = express.Router();
 
@@ -49,13 +49,15 @@ router.get("/:userId", async (req, res) => {
     });
   }
 });
+
+// Delete one summary
 router.delete("/:id", async (req, res) => {
   try {
     await Summary.findByIdAndDelete(req.params.id);
-    res.json({ message: "Deleted successfully" });
+    return res.json({ message: "Deleted successfully" });
   } catch (err) {
     console.log("DELETE ERROR:", err);
-    res.status(500).json({ message: "Delete failed" });
+    return res.status(500).json({ message: "Delete failed" });
   }
 });
 
