@@ -12,16 +12,15 @@ const summaryRoutes = require("./routes/Summary");
 
 const app = express();
 
-// middleware
-app.use(cors());
+app.use(cors({
+  origin: "*"
+}));
 app.use(express.json());
 
-// MongoDB connect
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.log("MongoDB error:", err.message));
 
-// uploads folder create
 const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -29,21 +28,20 @@ if (!fs.existsSync(uploadsDir)) {
 
 const upload = multer({ dest: uploadsDir });
 
-// routes
 app.use("/api/auth", authRoutes);
 app.use("/api/summary", summaryRoutes);
 
-// stop words
 const stopWords = new Set([
   "the", "is", "are", "a", "an", "and", "or", "of", "to", "in", "on", "for", "with",
   "by", "as", "at", "from", "that", "this", "it", "be", "was", "were", "has", "have",
   "had", "will", "can", "into", "about", "their", "them", "also", "than", "then",
   "but", "not", "which", "who", "what", "when", "where", "why", "how", "you", "your",
-  "we", "our", "they", "he", "she", "his", "her", "its"
+  "we", "our", "they", "he", "she", "his", "her", "its", "i", "am", "been", "being"
 ]);
 
 function splitSentences(text) {
   return text
+    .replace(/\r/g, " ")
     .replace(/\n+/g, " ")
     .split(/(?<=[.?!])\s+/)
     .map((s) => s.trim())
@@ -53,13 +51,13 @@ function splitSentences(text) {
 function getWordFrequency(text) {
   const words = text
     .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
     .split(/\s+/)
     .filter((w) => w && !stopWords.has(w) && w.length > 2);
 
   const freq = {};
-  for (const w of words) {
-    freq[w] = (freq[w] || 0) + 1;
+  for (const word of words) {
+    freq[word] = (freq[word] || 0) + 1;
   }
   return freq;
 }
@@ -68,12 +66,14 @@ function scoreSentences(sentences, freq) {
   return sentences.map((sentence, index) => {
     const words = sentence
       .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, "")
+      .replace(/[^a-z0-9\s]/g, " ")
       .split(/\s+/);
 
     let score = 0;
-    for (const w of words) {
-      if (freq[w]) score += freq[w];
+    for (const word of words) {
+      if (freq[word]) {
+        score += freq[word];
+      }
     }
 
     return { sentence, score, index };
@@ -81,7 +81,8 @@ function scoreSentences(sentences, freq) {
 }
 
 function generateSummaryAndPoints(text) {
-  const sentences = splitSentences(text);
+  const cleanText = (text || "").trim();
+  const sentences = splitSentences(cleanText);
 
   if (sentences.length === 0) {
     return {
@@ -90,33 +91,31 @@ function generateSummaryAndPoints(text) {
     };
   }
 
-  const freq = getWordFrequency(text);
+  const freq = getWordFrequency(cleanText);
   const scored = scoreSentences(sentences, freq);
 
-  const topSummary = [...scored]
+  const summarySentences = [...scored]
     .sort((a, b) => b.score - a.score)
-    .slice(0, 2)
+    .slice(0, Math.min(3, sentences.length))
     .sort((a, b) => a.index - b.index)
     .map((item) => item.sentence);
 
-  const topPoints = [...scored]
+  const keyPoints = [...scored]
     .sort((a, b) => b.score - a.score)
-    .slice(0, 4)
+    .slice(0, Math.min(5, sentences.length))
     .sort((a, b) => a.index - b.index)
-    .map((item) => item.sentence.replace(/[.?!]+$/, ""));
+    .map((item) => item.sentence.replace(/[.?!]+$/, "").trim());
 
-  let summary = topSummary.join(" ");
-  if (!summary) {
-    summary = sentences.slice(0, 2).join(" ");
-  }
+  const summary = summarySentences.length
+    ? summarySentences.join(" ")
+    : sentences.slice(0, 2).join(" ");
 
   return {
     summary,
-    points: [...new Set(topPoints)]
+    points: [...new Set(keyPoints)]
   };
 }
 
-// text summary
 app.post("/summarize", (req, res) => {
   try {
     const text = (req.body.text || "").trim();
@@ -131,7 +130,7 @@ app.post("/summarize", (req, res) => {
     const result = generateSummaryAndPoints(text);
     return res.json(result);
   } catch (err) {
-    console.log("Summarize error:", err);
+    console.log("SUMMARIZE ERROR:", err);
     return res.status(500).json({
       summary: "Error generating summary",
       points: []
@@ -139,7 +138,6 @@ app.post("/summarize", (req, res) => {
   }
 });
 
-// pdf upload summary
 app.post("/upload", upload.single("file"), async (req, res) => {
   try {
     console.log("UPLOAD HIT");
@@ -152,8 +150,8 @@ app.post("/upload", upload.single("file"), async (req, res) => {
     }
 
     const filePath = req.file.path;
-    const dataBuffer = fs.readFileSync(filePath);
-    const pdfData = await pdfParse(dataBuffer);
+    const buffer = fs.readFileSync(filePath);
+    const pdfData = await pdfParse(buffer);
     const text = (pdfData.text || "").trim();
 
     if (fs.existsSync(filePath)) {
@@ -162,7 +160,7 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 
     if (!text) {
       return res.status(400).json({
-        summary: "No readable text found in PDF",
+        summary: "No readable text found in PDF. Use a text-based PDF.",
         points: []
       });
     }
@@ -178,9 +176,12 @@ app.post("/upload", upload.single("file"), async (req, res) => {
   }
 });
 
-// test route
 app.get("/test", (req, res) => {
   res.send("Backend working 🚀");
+});
+
+app.get("/", (req, res) => {
+  res.send("NoteGenius backend is live");
 });
 
 const PORT = process.env.PORT || 5000;
