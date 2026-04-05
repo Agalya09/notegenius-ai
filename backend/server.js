@@ -8,7 +8,7 @@ const path = require("path");
 require("dotenv").config();
 
 const authRoutes = require("./routes/auth");
-const summaryRoutes = require("./routes/Summary");
+const summaryRoutes = require("./routes/summary");
 
 const app = express();
 
