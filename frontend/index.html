@@ -10,7 +10,6 @@
 
   <div class="flex h-screen">
 
-    <!-- Sidebar -->
     <aside id="sidebar" class="w-72 bg-zinc-900 border-r border-zinc-800 flex flex-col">
       <div id="sidebarTop" class="p-4 border-b border-zinc-800">
         <div class="flex items-center justify-between">
@@ -19,7 +18,6 @@
             <p id="brandText" class="text-sm text-zinc-400 mt-1">Smart Notes from Text & PDF</p>
           </div>
 
-          <!-- Theme toggle icon button -->
           <button
             id="themeBtn"
             onclick="toggleTheme()"
@@ -64,11 +62,9 @@
       </div>
     </aside>
 
-    <!-- Main -->
     <main class="flex-1 overflow-y-auto">
       <div class="max-w-4xl mx-auto p-6">
 
-        <!-- Page title -->
         <div class="mb-6">
           <h2 id="pageTitle" class="text-3xl font-bold mb-2">Create Summary</h2>
           <p id="pageSub" class="text-zinc-400">
@@ -76,10 +72,8 @@
           </p>
         </div>
 
-        <!-- Output FIRST -->
         <div id="output" class="hidden bg-zinc-900 border border-zinc-800 rounded-2xl p-5 min-h-[180px] mb-6"></div>
 
-        <!-- Input card AFTER output -->
         <div id="inputCard" class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
           <label id="textLabel" class="block text-sm font-medium text-zinc-300 mb-2">Enter Text</label>
 
@@ -90,7 +84,6 @@
             placeholder="Paste your study content here..."
           ></textarea>
 
-          <!-- Text summarize button -->
           <button
             onclick="summarizeText()"
             id="generateBtn"
@@ -104,7 +97,6 @@
 
           <label id="pdfLabel" class="block text-sm font-medium text-zinc-300 mb-2">Upload PDF</label>
 
-          <!-- PDF row -->
           <div class="flex gap-2">
             <input
               type="file"
@@ -130,6 +122,8 @@
   </div>
 
   <script>
+    const BASE_URL = "https://notegenius-ai-t75e.onrender.com";
+
     if (!localStorage.getItem("user")) {
       window.location.href = "login.html";
     }
@@ -196,7 +190,7 @@
       output.innerHTML = "<p class='text-zinc-400'>Generating summary...</p>";
 
       try {
-        const res = await fetch("http://localhost:5000/summarize", {
+        const res = await fetch(`${BASE_URL}/summarize`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -228,7 +222,7 @@
       formData.append("file", file);
 
       try {
-        const res = await fetch("http://localhost:5000/upload", {
+        const res = await fetch(`${BASE_URL}/upload`, {
           method: "POST",
           body: formData
         });
@@ -243,15 +237,20 @@
 
     async function saveSummary() {
       const user = JSON.parse(localStorage.getItem("user"));
-      const textValue = document.getElementById("text").value;
+      const textValue = document.getElementById("text").value.trim();
 
       if (!window.currentData) {
         alert("Generate summary first");
         return;
       }
 
+      if (!user || (!user._id && !user.id)) {
+        alert("User not found. Please login again.");
+        return;
+      }
+
       try {
-        const res = await fetch("http://localhost:5000/api/summary/save", {
+        const res = await fetch(`${BASE_URL}/api/summary/save`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -282,8 +281,13 @@
       const user = JSON.parse(localStorage.getItem("user"));
       const container = document.getElementById("sidebarHistory");
 
+      if (!user || (!user._id && !user.id)) {
+        container.innerHTML = `<p class="text-zinc-500 text-sm px-1">Login again to load history.</p>`;
+        return;
+      }
+
       try {
-        const res = await fetch(`http://localhost:5000/api/summary/${user._id || user.id}`);
+        const res = await fetch(`${BASE_URL}/api/summary/${user._id || user.id}`);
         const data = await res.json();
 
         if (!data || data.length === 0) {
@@ -298,8 +302,7 @@
           html += `
             <div class="bg-zinc-800 hover:bg-zinc-700 rounded-lg p-3">
               <div class="flex justify-between items-start gap-2">
-                <div class="cursor-pointer flex-1"
-                     onclick='showHistoryItem(${JSON.stringify(item).replace(/'/g, "&apos;")})'>
+                <div class="cursor-pointer flex-1" onclick='showHistoryItem(${JSON.stringify(item).replace(/'/g, "&apos;")})'>
                   <p class="text-sm font-medium text-zinc-100 line-clamp-2">
                     ${safeSummary}
                   </p>
@@ -339,7 +342,7 @@
       if (!confirmDelete) return;
 
       try {
-        const res = await fetch(`http://localhost:5000/api/summary/${id}`, {
+        const res = await fetch(`${BASE_URL}/api/summary/${id}`, {
           method: "DELETE"
         });
 
