@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login - NoteGenius AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-zinc-950 text-zinc-100 flex items-center justify-center px-4">
+
+  <div class="w-full max-w-5xl grid md:grid-cols-2 bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl">
+
+    <!-- Left branding panel -->
+    <div class="hidden md:flex flex-col justify-center bg-gradient-to-br from-emerald-500 to-blue-500 text-black p-10">
+      <h1 class="text-4xl font-extrabold mb-4">NoteGenius AI</h1>
+      <p class="text-lg font-medium mb-6">
+        Smart Notes from Text & PDF
+      </p>
+
+      <div class="space-y-3 text-sm font-medium">
+        <p>✓ Summarize long text instantly</p>
+        <p>✓ Extract important key points</p>
+        <p>✓ Save summaries to history</p>
+        <p>✓ Access notes anytime</p>
+      </div>
+    </div>
+
+    <!-- Right form panel -->
+    <div class="p-8 md:p-10">
+      <div class="mb-8">
+        <h2 class="text-3xl font-bold mb-2">Welcome Back</h2>
+        <p class="text-zinc-400">Login to continue using NoteGenius AI</p>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-zinc-300 mb-2">Email</label>
+          <input
+            id="email"
+            type="email"
+            placeholder="Enter your email"
+            class="w-full bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-zinc-300 mb-2">Password</label>
+          <input
+            id="password"
+            type="password"
+            placeholder="Enter your password"
+            class="w-full bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          />
+        </div>
+
+        <button
+          onclick="login()"
+          class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold py-3 rounded-xl transition"
+        >
+          Login
+        </button>
+
+        <p id="message" class="text-sm text-red-400 text-center min-h-[20px]"></p>
+      </div>
+
+      <div class="mt-8 text-center text-sm text-zinc-400">
+        Don’t have an account?
+        <a href="signup.html" class="text-emerald-400 hover:text-emerald-300 font-medium">
+          Create one
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    async function login() {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const message = document.getElementById("message");
+
+      if (!email || !password) {
+        message.innerText = "Please fill all fields";
+        return;
+      }
+
+      try {
+        message.innerText = "Logging in...";
+
+        const res = await fetch("http://localhost:5000/api/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("user", JSON.stringify(data.user));
+          message.className = "text-sm text-emerald-400 text-center min-h-[20px]";
+          message.innerText = "Login successful";
+
+          setTimeout(() => {
+            window.location.href = "index.html";
+          }, 700);
+        } else {
+          message.className = "text-sm text-red-400 text-center min-h-[20px]";
+          message.innerText = data.message || "Login failed";
+        }
+      } catch (error) {
+        console.log("Login error:", error);
+        message.className = "text-sm text-red-400 text-center min-h-[20px]";
+        message.innerText = "Login request failed";
+      }
+    }
+  </script>
+</body>
+</html>

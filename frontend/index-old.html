@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NoteGenius AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+  <div class="bg-white p-6 rounded-2xl shadow-lg w-full max-w-2xl">
+
+    <div class="flex justify-between items-center mb-4">
+      <h1 class="text-2xl font-bold">NoteGenius AI</h1>
+
+      <div class="space-x-3">
+        <a href="history.html" class="text-blue-600 font-medium">History</a>
+        <button onclick="logout()" class="text-red-500 font-medium">Logout</button>
+      </div>
+    </div>
+
+    <textarea
+      id="text"
+      rows="8"
+      class="w-full border border-gray-300 rounded-lg p-3 mb-4"
+      placeholder="Paste your study content here..."
+    ></textarea>
+
+    <button
+      onclick="summarizeText()"
+      class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg mb-4"
+    >
+      Generate Summary
+    </button>
+
+    <div class="text-center text-gray-400 mb-4">OR</div>
+
+    <input
+      type="file"
+      id="pdfFile"
+      accept=".pdf"
+      class="w-full border p-2 rounded-lg mb-4"
+    />
+
+    <button
+      onclick="uploadPDF()"
+      class="w-full bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg mb-4"
+    >
+      Upload PDF & Summarize
+    </button>
+
+    <div id="output" class="hidden bg-gray-50 p-4 rounded-lg border min-h-[120px]"></div>
+
+  </div>
+
+  <script>
+    if (!localStorage.getItem("user")) {
+      window.location.href = "login.html";
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = "login.html";
+    }
+
+    function renderOutput(data) {
+      const output = document.getElementById("output");
+
+      let html = `
+        <div>
+          <h3 class="font-bold text-lg mb-2">Summary:</h3>
+          <p class="mb-4">${data.summary || "No summary available"}</p>
+        </div>
+      `;
+
+      if (data.points && data.points.length > 0) {
+        html += `
+          <div>
+            <h3 class="font-bold text-lg mb-2">Key Points:</h3>
+            <ul class="list-disc ml-5 mb-4">
+              ${data.points.map(point => `<li>${point}</li>`).join("")}
+            </ul>
+          </div>
+        `;
+      }
+
+      html += `
+        <button onclick="saveSummary()" 
+          class="mt-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded">
+          Save Summary
+        </button>
+      `;
+
+      output.innerHTML = html;
+      output.classList.remove("hidden");
+
+      window.currentData = data;
+    }
+
+    async function summarizeText() {
+      const text = document.getElementById("text").value.trim();
+      const output = document.getElementById("output");
+
+      if (!text) {
+        alert("Enter text first");
+        return;
+      }
+
+      output.classList.remove("hidden");
+      output.innerHTML = "Generating summary...";
+
+      try {
+        const res = await fetch("http://localhost:5000/summarize", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ text })
+        });
+
+        const data = await res.json();
+        console.log("Summary response:", data);
+
+        renderOutput(data);
+
+      } catch (err) {
+        console.log("Summarize error:", err);
+        output.innerHTML = "<p class='text-red-500'>Error generating summary</p>";
+      }
+    }
+
+    async function uploadPDF() {
+      const file = document.getElementById("pdfFile").files[0];
+      const output = document.getElementById("output");
+
+      if (!file) {
+        alert("Choose PDF file");
+        return;
+      }
+
+      output.classList.remove("hidden");
+      output.innerHTML = "Processing PDF...";
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const res = await fetch("http://localhost:5000/upload", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await res.json();
+        console.log("PDF response:", data);
+
+        renderOutput(data);
+
+      } catch (err) {
+        console.log("PDF upload error:", err);
+        output.innerHTML = "<p class='text-red-500'>PDF upload failed</p>";
+      }
+    }
+
+    async function saveSummary() {
+      const user = JSON.parse(localStorage.getItem("user"));
+      const textValue = document.getElementById("text").value;
+
+      if (!window.currentData) {
+        alert("Generate summary first");
+        return;
+      }
+
+      try {
+        const res = await fetch("http://localhost:5000/api/summary/save", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            userId: user._id || user.id,
+            text: textValue,
+            summary: window.currentData.summary,
+            points: window.currentData.points || []
+          })
+        });
+
+        const data = await res.json();
+        console.log("Save response:", data);
+
+        if (res.ok) {
+          alert("Saved successfully!");
+        } else {
+          alert(data.message || "Save failed");
+        }
+
+      } catch (err) {
+        console.log("Save error:", err);
+        alert("Save failed");
+      }
+    }
+  </script>
+
+</body>
+</html>

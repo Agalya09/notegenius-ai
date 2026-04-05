@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NoteGenius AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body id="pageBody" class="bg-zinc-950 text-zinc-100 min-h-screen">
+
+  <div class="flex h-screen">
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="w-72 bg-zinc-900 border-r border-zinc-800 flex flex-col">
+      <div id="sidebarTop" class="p-4 border-b border-zinc-800">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-bold">NoteGenius AI</h1>
+            <p id="brandText" class="text-sm text-zinc-400 mt-1">Smart Notes from Text & PDF</p>
+          </div>
+
+          <!-- Theme toggle icon button -->
+          <button
+            id="themeBtn"
+            onclick="toggleTheme()"
+            class="w-10 h-10 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-lg"
+            title="Toggle Theme"
+          >
+            ☀️
+          </button>
+        </div>
+      </div>
+
+      <div class="p-4 space-y-3">
+        <button onclick="newSummary()"
+          id="newBtn"
+          class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold py-3 rounded-lg">
+          + New Summary
+        </button>
+
+        <a href="history.html"
+          id="historyBtn"
+          class="block w-full text-center bg-zinc-800 hover:bg-zinc-700 text-zinc-100 py-3 rounded-lg">
+          Open Full History
+        </a>
+      </div>
+
+      <div class="px-4 pb-2">
+        <h2 id="recentHeading" class="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
+          Recent Summaries
+        </h2>
+      </div>
+
+      <div id="sidebarHistory" class="flex-1 overflow-y-auto px-3 pb-4 space-y-2">
+        <p class="text-zinc-500 text-sm px-1">Loading history...</p>
+      </div>
+
+      <div id="sidebarBottom" class="p-4 border-t border-zinc-800">
+        <button onclick="logout()"
+          id="logoutBtn"
+          class="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg">
+          Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 overflow-y-auto">
+      <div class="max-w-4xl mx-auto p-6">
+
+        <!-- Page title -->
+        <div class="mb-6">
+          <h2 id="pageTitle" class="text-3xl font-bold mb-2">Create Summary</h2>
+          <p id="pageSub" class="text-zinc-400">
+            Generate concise notes from text or text-based PDFs.
+          </p>
+        </div>
+
+        <!-- Output FIRST -->
+        <div id="output" class="hidden bg-zinc-900 border border-zinc-800 rounded-2xl p-5 min-h-[180px] mb-6"></div>
+
+        <!-- Input card AFTER output -->
+        <div id="inputCard" class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
+          <label id="textLabel" class="block text-sm font-medium text-zinc-300 mb-2">Enter Text</label>
+
+          <textarea
+            id="text"
+            rows="8"
+            class="w-full bg-zinc-950 border border-zinc-700 rounded-xl p-4 text-zinc-100 placeholder-zinc-500 mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            placeholder="Paste your study content here..."
+          ></textarea>
+
+          <!-- Text summarize button -->
+          <button
+            onclick="summarizeText()"
+            id="generateBtn"
+            class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold py-3 rounded-xl mb-4 flex items-center justify-center gap-2"
+          >
+            Generate Summary
+            <span>➤</span>
+          </button>
+
+          <div id="orText" class="text-center text-zinc-500 mb-4">OR</div>
+
+          <label id="pdfLabel" class="block text-sm font-medium text-zinc-300 mb-2">Upload PDF</label>
+
+          <!-- PDF row -->
+          <div class="flex gap-2">
+            <input
+              type="file"
+              id="pdfFile"
+              accept=".pdf"
+              class="flex-1 bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-zinc-300"
+            />
+
+            <button
+              onclick="uploadPDF()"
+              id="pdfSendBtn"
+              class="bg-blue-500 hover:bg-blue-600 text-white px-5 rounded-xl text-lg font-semibold"
+              title="Upload PDF"
+            >
+              ➤
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+  </div>
+
+  <script>
+    if (!localStorage.getItem("user")) {
+      window.location.href = "login.html";
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = "login.html";
+    }
+
+    function newSummary() {
+      document.getElementById("text").value = "";
+      document.getElementById("pdfFile").value = "";
+      const output = document.getElementById("output");
+      output.innerHTML = "";
+      output.classList.add("hidden");
+      window.currentData = null;
+    }
+
+    function renderOutput(data) {
+      const output = document.getElementById("output");
+
+      let html = `
+        <div class="mb-5">
+          <h3 class="text-xl font-bold mb-2">Summary</h3>
+          <p class="leading-7">${data.summary || "No summary available"}</p>
+        </div>
+      `;
+
+      if (data.points && data.points.length > 0) {
+        html += `
+          <div class="mb-5">
+            <h3 class="text-xl font-bold mb-2">Key Points</h3>
+            <ul class="list-disc ml-6 space-y-2">
+              ${data.points.map(point => `<li>${point}</li>`).join("")}
+            </ul>
+          </div>
+        `;
+      }
+
+      html += `
+        <button onclick="saveSummary()"
+          class="mt-2 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg">
+          Save Summary
+        </button>
+      `;
+
+      output.innerHTML = html;
+      output.classList.remove("hidden");
+      window.currentData = data;
+
+      output.scrollIntoView({ behavior: "smooth" });
+    }
+
+    async function summarizeText() {
+      const text = document.getElementById("text").value.trim();
+      const output = document.getElementById("output");
+
+      if (!text) {
+        alert("Enter text first");
+        return;
+      }
+
+      output.classList.remove("hidden");
+      output.innerHTML = "<p class='text-zinc-400'>Generating summary...</p>";
+
+      try {
+        const res = await fetch("http://localhost:5000/summarize", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ text })
+        });
+
+        const data = await res.json();
+        renderOutput(data);
+      } catch (err) {
+        console.log("Summarize error:", err);
+        output.innerHTML = "<p class='text-red-400'>Error generating summary</p>";
+      }
+    }
+
+    async function uploadPDF() {
+      const file = document.getElementById("pdfFile").files[0];
+      const output = document.getElementById("output");
+
+      if (!file) {
+        alert("Choose PDF file");
+        return;
+      }
+
+      output.classList.remove("hidden");
+      output.innerHTML = "<p class='text-zinc-400'>Processing PDF...</p>";
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const res = await fetch("http://localhost:5000/upload", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await res.json();
+        renderOutput(data);
+      } catch (err) {
+        console.log("PDF upload error:", err);
+        output.innerHTML = "<p class='text-red-400'>PDF upload failed</p>";
+      }
+    }
+
+    async function saveSummary() {
+      const user = JSON.parse(localStorage.getItem("user"));
+      const textValue = document.getElementById("text").value;
+
+      if (!window.currentData) {
+        alert("Generate summary first");
+        return;
+      }
+
+      try {
+        const res = await fetch("http://localhost:5000/api/summary/save", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            userId: user._id || user.id,
+            text: textValue || "[PDF Uploaded Content]",
+            summary: window.currentData.summary,
+            points: window.currentData.points || []
+          })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          alert("Saved successfully!");
+          loadSidebarHistory();
+        } else {
+          alert(data.message || "Save failed");
+        }
+      } catch (err) {
+        console.log("Save error:", err);
+        alert("Save failed");
+      }
+    }
+
+    async function loadSidebarHistory() {
+      const user = JSON.parse(localStorage.getItem("user"));
+      const container = document.getElementById("sidebarHistory");
+
+      try {
+        const res = await fetch(`http://localhost:5000/api/summary/${user._id || user.id}`);
+        const data = await res.json();
+
+        if (!data || data.length === 0) {
+          container.innerHTML = `<p class="text-zinc-500 text-sm px-1">No saved summaries yet.</p>`;
+          return;
+        }
+
+        let html = "";
+
+        data.slice(0, 10).forEach(item => {
+          const safeSummary = item.summary ? item.summary.substring(0, 80) : "Saved summary";
+          html += `
+            <div class="bg-zinc-800 hover:bg-zinc-700 rounded-lg p-3">
+              <div class="flex justify-between items-start gap-2">
+                <div class="cursor-pointer flex-1"
+                     onclick='showHistoryItem(${JSON.stringify(item).replace(/'/g, "&apos;")})'>
+                  <p class="text-sm font-medium text-zinc-100 line-clamp-2">
+                    ${safeSummary}
+                  </p>
+                  <p class="text-xs text-zinc-400 mt-1">
+                    ${new Date(item.createdAt).toLocaleString()}
+                  </p>
+                </div>
+
+                <button
+                  onclick="deleteSummary('${item._id}')"
+                  class="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded"
+                  title="Delete"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          `;
+        });
+
+        container.innerHTML = html;
+      } catch (err) {
+        console.log("Sidebar history error:", err);
+        container.innerHTML = `<p class="text-red-400 text-sm px-1">Failed to load history</p>`;
+      }
+    }
+
+    function showHistoryItem(item) {
+      renderOutput({
+        summary: item.summary,
+        points: item.points || []
+      });
+    }
+
+    async function deleteSummary(id) {
+      const confirmDelete = confirm("Delete this summary?");
+      if (!confirmDelete) return;
+
+      try {
+        const res = await fetch(`http://localhost:5000/api/summary/${id}`, {
+          method: "DELETE"
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          loadSidebarHistory();
+          alert("Deleted successfully!");
+        } else {
+          alert(data.message || "Delete failed");
+        }
+      } catch (err) {
+        console.log("Delete error:", err);
+        alert("Delete failed");
+      }
+    }
+
+    function applyTheme(theme) {
+      const body = document.getElementById("pageBody");
+      const sidebar = document.getElementById("sidebar");
+      const sidebarTop = document.getElementById("sidebarTop");
+      const sidebarBottom = document.getElementById("sidebarBottom");
+      const brandText = document.getElementById("brandText");
+      const recentHeading = document.getElementById("recentHeading");
+      const inputCard = document.getElementById("inputCard");
+      const output = document.getElementById("output");
+      const textArea = document.getElementById("text");
+      const themeBtn = document.getElementById("themeBtn");
+      const newBtn = document.getElementById("newBtn");
+      const historyBtn = document.getElementById("historyBtn");
+      const logoutBtn = document.getElementById("logoutBtn");
+      const pageSub = document.getElementById("pageSub");
+      const textLabel = document.getElementById("textLabel");
+      const pdfLabel = document.getElementById("pdfLabel");
+      const orText = document.getElementById("orText");
+      const pdfFile = document.getElementById("pdfFile");
+      const pdfSendBtn = document.getElementById("pdfSendBtn");
+
+      if (theme === "light") {
+        body.className = "bg-gray-100 text-gray-900 min-h-screen";
+        sidebar.className = "w-72 bg-white border-r border-gray-300 flex flex-col";
+        sidebarTop.className = "p-4 border-b border-gray-300";
+        sidebarBottom.className = "p-4 border-t border-gray-300";
+        brandText.className = "text-sm text-gray-500 mt-1";
+        recentHeading.className = "text-sm font-semibold text-gray-500 uppercase tracking-wide";
+        inputCard.className = "bg-white border border-gray-300 rounded-2xl p-5";
+        output.className = output.classList.contains("hidden")
+          ? "hidden bg-white border border-gray-300 rounded-2xl p-5 min-h-[180px] mb-6"
+          : "bg-white border border-gray-300 rounded-2xl p-5 min-h-[180px] mb-6";
+        textArea.className = "w-full bg-white border border-gray-300 rounded-xl p-4 text-gray-900 placeholder-gray-500 mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500";
+        themeBtn.innerHTML = "🌙";
+        themeBtn.className = "w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-lg";
+        newBtn.className = "w-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold py-3 rounded-lg";
+        historyBtn.className = "block w-full text-center bg-gray-200 hover:bg-gray-300 text-gray-900 py-3 rounded-lg";
+        logoutBtn.className = "w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg";
+        pageSub.className = "text-gray-500";
+        textLabel.className = "block text-sm font-medium text-gray-700 mb-2";
+        pdfLabel.className = "block text-sm font-medium text-gray-700 mb-2";
+        orText.className = "text-center text-gray-500 mb-4";
+        pdfFile.className = "flex-1 bg-white border border-gray-300 rounded-xl p-3 text-gray-700";
+        pdfSendBtn.className = "bg-blue-500 hover:bg-blue-600 text-white px-5 rounded-xl text-lg font-semibold";
+      } else {
+        body.className = "bg-zinc-950 text-zinc-100 min-h-screen";
+        sidebar.className = "w-72 bg-zinc-900 border-r border-zinc-800 flex flex-col";
+        sidebarTop.className = "p-4 border-b border-zinc-800";
+        sidebarBottom.className = "p-4 border-t border-zinc-800";
+        brandText.className = "text-sm text-zinc-400 mt-1";
+        recentHeading.className = "text-sm font-semibold text-zinc-400 uppercase tracking-wide";
+        inputCard.className = "bg-zinc-900 border border-zinc-800 rounded-2xl p-5";
+        output.className = output.classList.contains("hidden")
+          ? "hidden bg-zinc-900 border border-zinc-800 rounded-2xl p-5 min-h-[180px] mb-6"
+          : "bg-zinc-900 border border-zinc-800 rounded-2xl p-5 min-h-[180px] mb-6";
+        textArea.className = "w-full bg-zinc-950 border border-zinc-700 rounded-xl p-4 text-zinc-100 placeholder-zinc-500 mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500";
+        themeBtn.innerHTML = "☀️";
+        themeBtn.className = "w-10 h-10 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-lg";
+        newBtn.className = "w-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold py-3 rounded-lg";
+        historyBtn.className = "block w-full text-center bg-zinc-800 hover:bg-zinc-700 text-zinc-100 py-3 rounded-lg";
+        logoutBtn.className = "w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg";
+        pageSub.className = "text-zinc-400";
+        textLabel.className = "block text-sm font-medium text-zinc-300 mb-2";
+        pdfLabel.className = "block text-sm font-medium text-zinc-300 mb-2";
+        orText.className = "text-center text-zinc-500 mb-4";
+        pdfFile.className = "flex-1 bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-zinc-300";
+        pdfSendBtn.className = "bg-blue-500 hover:bg-blue-600 text-white px-5 rounded-xl text-lg font-semibold";
+      }
+    }
+
+    function toggleTheme() {
+      const currentTheme = localStorage.getItem("theme") || "dark";
+      const newTheme = currentTheme === "dark" ? "light" : "dark";
+      localStorage.setItem("theme", newTheme);
+      applyTheme(newTheme);
+    }
+
+    const savedTheme = localStorage.getItem("theme") || "dark";
+    applyTheme(savedTheme);
+    loadSidebarHistory();
+  </script>
+</body>
+</html>
