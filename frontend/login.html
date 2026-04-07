@@ -10,7 +10,6 @@
 
   <div class="w-full max-w-5xl grid md:grid-cols-2 bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl">
 
-    <!-- Left branding panel -->
     <div class="hidden md:flex flex-col justify-center bg-gradient-to-br from-emerald-500 to-blue-500 text-black p-10">
       <h1 class="text-4xl font-extrabold mb-4">NoteGenius AI</h1>
       <p class="text-lg font-medium mb-6">
@@ -18,14 +17,13 @@
       </p>
 
       <div class="space-y-3 text-sm font-medium">
-        <p>✓ Summarize long text instantly</p>
-        <p>✓ Extract important key points</p>
-        <p>✓ Save summaries to history</p>
-        <p>✓ Access notes anytime</p>
+        <p>Summarize long text instantly</p>
+        <p>Extract important key points</p>
+        <p>Save summaries to history</p>
+        <p>Access notes anytime</p>
       </div>
     </div>
 
-    <!-- Right form panel -->
     <div class="p-8 md:p-10">
       <div class="mb-8">
         <h2 class="text-3xl font-bold mb-2">Welcome Back</h2>
@@ -74,20 +72,24 @@
   </div>
 
   <script>
+    const BASE_URL = "https://notegenius-ai-t75e.onrender.com";
+
     async function login() {
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value.trim();
       const message = document.getElementById("message");
 
       if (!email || !password) {
+        message.className = "text-sm text-red-400 text-center min-h-[20px]";
         message.innerText = "Please fill all fields";
         return;
       }
 
       try {
+        message.className = "text-sm text-zinc-400 text-center min-h-[20px]";
         message.innerText = "Logging in...";
 
-        const res = await fetch("http://localhost:5000/api/auth/login", {
+        const res = await fetch(`${BASE_URL}/api/auth/login`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -100,6 +102,7 @@
         if (res.ok) {
           localStorage.setItem("token", data.token);
           localStorage.setItem("user", JSON.stringify(data.user));
+
           message.className = "text-sm text-emerald-400 text-center min-h-[20px]";
           message.innerText = "Login successful";
 
