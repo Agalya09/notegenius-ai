@@ -23,6 +23,8 @@
   </div>
 
   <script>
+    const BASE_URL = "https://notegenius-ai-t75e.onrender.com";
+
     if (!localStorage.getItem("user")) {
       window.location.href = "login.html";
     }
@@ -36,9 +38,19 @@
       const user = JSON.parse(localStorage.getItem("user"));
       const container = document.getElementById("historyContainer");
 
+      if (!user || (!user._id && !user.id)) {
+        container.innerHTML = "<p class='text-red-500'>User not found. Please login again.</p>";
+        return;
+      }
+
       try {
-        const res = await fetch(`http://localhost:5000/api/summary/${user._id || user.id}`);
+        const res = await fetch(`${BASE_URL}/api/summary/${user._id || user.id}`);
         const data = await res.json();
+
+        if (!res.ok) {
+          container.innerHTML = `<p class='text-red-500'>${data.message || "Failed to load history"}</p>`;
+          return;
+        }
 
         if (!data || data.length === 0) {
           container.innerHTML = "<p class='text-gray-500'>No history found.</p>";
@@ -55,7 +67,7 @@
               </p>
 
               <h2 class="font-semibold text-lg mb-2">Summary</h2>
-              <p class="mb-3">${item.summary}</p>
+              <p class="mb-3">${item.summary || "No summary available"}</p>
 
               <h3 class="font-medium mb-2">Key Points</h3>
               <ul class="list-disc ml-6 mb-3">
@@ -64,16 +76,15 @@
 
               <details class="mt-2">
                 <summary class="cursor-pointer text-blue-600">View Original Text</summary>
-                <p class="mt-2 text-gray-700 whitespace-pre-wrap">${item.text}</p>
+                <p class="mt-2 text-gray-700 whitespace-pre-wrap">${item.text || ""}</p>
               </details>
             </div>
           `;
         });
 
         container.innerHTML = html;
-
       } catch (err) {
-        console.log(err);
+        console.log("History error:", err);
         container.innerHTML = "<p class='text-red-500'>Failed to load history</p>";
       }
     }
