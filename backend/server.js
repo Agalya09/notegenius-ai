@@ -12,15 +12,45 @@ const summaryRoutes = require("./routes/Summary");
 
 const app = express();
 
-app.use(cors({
-  origin: "*"
-}));
+// CORS
+const corsOptions = {
+  origin: function (origin, callback) {
+    // allow requests with no origin (Postman, direct server checks, etc.)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    const allowedOrigins = [
+      "https://notegenius-ai.netlify.app",
+      "http://localhost:5500",
+      "http://127.0.0.1:5500",
+      "http://localhost:3000"
+    ];
+
+    const isNetlifyPreview =
+      origin.endsWith(".netlify.app");
+
+    if (allowedOrigins.includes(origin) || isNetlifyPreview) {
+      return callback(null, true);
+    }
+
+    return callback(new Error("Not allowed by CORS: " + origin));
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+
 app.use(express.json());
 
+// MongoDB
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.log("MongoDB error:", err.message));
 
+// uploads folder
 const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -28,9 +58,11 @@ if (!fs.existsSync(uploadsDir)) {
 
 const upload = multer({ dest: uploadsDir });
 
+// routes
 app.use("/api/auth", authRoutes);
 app.use("/api/summary", summaryRoutes);
 
+// stop words
 const stopWords = new Set([
   "the", "is", "are", "a", "an", "and", "or", "of", "to", "in", "on", "for", "with",
   "by", "as", "at", "from", "that", "this", "it", "be", "was", "were", "has", "have",
@@ -116,6 +148,7 @@ function generateSummaryAndPoints(text) {
   };
 }
 
+// text summary
 app.post("/summarize", (req, res) => {
   try {
     const text = (req.body.text || "").trim();
@@ -138,6 +171,7 @@ app.post("/summarize", (req, res) => {
   }
 });
 
+// pdf summary
 app.post("/upload", upload.single("file"), async (req, res) => {
   try {
     console.log("UPLOAD HIT");
@@ -176,6 +210,7 @@ app.post("/upload", upload.single("file"), async (req, res) => {
   }
 });
 
+// health routes
 app.get("/test", (req, res) => {
   res.send("Backend working 🚀");
 });
