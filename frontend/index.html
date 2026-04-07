@@ -30,15 +30,19 @@
       </div>
 
       <div class="p-4 space-y-3">
-        <button onclick="newSummary()"
+        <button
+          onclick="newSummary()"
           id="newBtn"
-          class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold py-3 rounded-lg">
+          class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold py-3 rounded-lg"
+        >
           + New Summary
         </button>
 
-        <a href="history.html"
+        <a
+          href="history.html"
           id="historyBtn"
-          class="block w-full text-center bg-zinc-800 hover:bg-zinc-700 text-zinc-100 py-3 rounded-lg">
+          class="block w-full text-center bg-zinc-800 hover:bg-zinc-700 text-zinc-100 py-3 rounded-lg"
+        >
           Open Full History
         </a>
       </div>
@@ -54,9 +58,11 @@
       </div>
 
       <div id="sidebarBottom" class="p-4 border-t border-zinc-800">
-        <button onclick="logout()"
+        <button
+          onclick="logout()"
           id="logoutBtn"
-          class="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg">
+          class="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg"
+        >
           Logout
         </button>
       </div>
@@ -164,8 +170,10 @@
       }
 
       html += `
-        <button onclick="saveSummary()"
-          class="mt-2 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg">
+        <button
+          onclick="saveSummary()"
+          class="mt-2 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg"
+        >
           Save Summary
         </button>
       `;
@@ -199,6 +207,12 @@
         });
 
         const data = await res.json();
+
+        if (!res.ok) {
+          output.innerHTML = `<p class='text-red-400'>${data.summary || data.message || "Error generating summary"}</p>`;
+          return;
+        }
+
         renderOutput(data);
       } catch (err) {
         console.log("Summarize error:", err);
@@ -206,41 +220,40 @@
       }
     }
 
-async function uploadPDF() {
-  const file = document.getElementById("pdfFile").files[0];
-  const output = document.getElementById("output");
+    async function uploadPDF() {
+      const file = document.getElementById("pdfFile").files[0];
+      const output = document.getElementById("output");
 
-  if (!file) {
-    alert("Choose PDF file");
-    return;
-  }
+      if (!file) {
+        alert("Choose PDF file");
+        return;
+      }
 
-  output.classList.remove("hidden");
-  output.innerHTML = "<p class='text-zinc-400'>Processing PDF...</p>";
+      output.classList.remove("hidden");
+      output.innerHTML = "<p class='text-zinc-400'>Processing PDF...</p>";
 
-  const formData = new FormData();
-  formData.append("file", file);
+      const formData = new FormData();
+      formData.append("file", file);
 
-  try {
-    const res = await fetch(`${BASE_URL}/upload`, {
-      method: "POST",
-      body: formData
-    });
+      try {
+        const res = await fetch(`${BASE_URL}/upload`, {
+          method: "POST",
+          body: formData
+        });
 
-    const data = await res.json();
+        const data = await res.json();
 
-    if (!res.ok) {
-      output.innerHTML = `<p class='text-red-400'>${data.summary || data.message || "PDF upload failed"}</p>`;
-      return;
+        if (!res.ok) {
+          output.innerHTML = `<p class='text-red-400'>${data.summary || data.message || "PDF upload failed"}</p>`;
+          return;
+        }
+
+        renderOutput(data);
+      } catch (err) {
+        console.log("PDF upload error:", err);
+        output.innerHTML = "<p class='text-red-400'>PDF upload failed</p>";
+      }
     }
-
-    renderOutput(data);
-  } catch (err) {
-    console.log("PDF upload error:", err);
-    output.innerHTML = "<p class='text-red-400'>PDF upload failed</p>";
-  }
-}
-
 
     async function saveSummary() {
       const user = JSON.parse(localStorage.getItem("user"));
