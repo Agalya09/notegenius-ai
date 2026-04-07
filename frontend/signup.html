@@ -10,7 +10,6 @@
 
   <div class="w-full max-w-5xl grid md:grid-cols-2 bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl">
 
-    <!-- Left branding panel -->
     <div class="hidden md:flex flex-col justify-center bg-gradient-to-br from-emerald-500 to-blue-500 text-black p-10">
       <h1 class="text-4xl font-extrabold mb-4">NoteGenius AI</h1>
       <p class="text-lg font-medium mb-6">
@@ -18,14 +17,13 @@
       </p>
 
       <div class="space-y-3 text-sm font-medium">
-        <p>✓ Summarize long text instantly</p>
-        <p>✓ Extract important key points</p>
-        <p>✓ Save summaries to history</p>
-        <p>✓ Access notes anytime</p>
+        <p>Summarize long text instantly</p>
+        <p>Extract important key points</p>
+        <p>Save summaries to history</p>
+        <p>Access notes anytime</p>
       </div>
     </div>
 
-    <!-- Right form panel -->
     <div class="p-8 md:p-10">
       <div class="mb-8">
         <h2 class="text-3xl font-bold mb-2">Create Account</h2>
@@ -84,6 +82,8 @@
   </div>
 
   <script>
+    const BASE_URL = "https://notegenius-ai-t75e.onrender.com";
+
     async function signup() {
       const name = document.getElementById("name").value.trim();
       const email = document.getElementById("email").value.trim();
@@ -100,7 +100,7 @@
         message.className = "text-sm text-zinc-400 text-center min-h-[20px]";
         message.innerText = "Creating account...";
 
-        const res = await fetch("http://localhost:5000/api/auth/signup", {
+        const res = await fetch(`${BASE_URL}/api/auth/signup`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
