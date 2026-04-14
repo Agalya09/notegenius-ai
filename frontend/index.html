@@ -2,133 +2,269 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>NoteGenius AI</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body id="pageBody" class="bg-zinc-950 text-zinc-100 min-h-screen">
+<body id="pageBody" class="min-h-screen bg-slate-50 text-slate-900">
 
-  <div class="flex h-screen">
+  <div class="min-h-screen flex">
 
-    <aside id="sidebar" class="w-72 bg-zinc-900 border-r border-zinc-800 flex flex-col">
-      <div id="sidebarTop" class="p-4 border-b border-zinc-800">
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-2xl font-bold">NoteGenius AI</h1>
-            <p id="brandText" class="text-sm text-zinc-400 mt-1">Smart Notes from Text & PDF</p>
-          </div>
-
-          <button
-            id="themeBtn"
-            onclick="toggleTheme()"
-            class="w-10 h-10 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-lg"
-            title="Toggle Theme"
-          >
-            ☀️
-          </button>
-        </div>
+    <!-- Sidebar -->
+    <aside id="sidebar" class="hidden md:flex w-72 bg-slate-900 text-white flex-col">
+      <div class="p-6 border-b border-slate-800">
+        <h1 class="text-2xl font-bold">NoteGenius AI</h1>
+        <p id="sidebarText" class="text-sm text-slate-300 mt-3 leading-6">
+          Summarize text, review grammar, and store results for later use.
+        </p>
       </div>
 
       <div class="p-4 space-y-3">
         <button
-          onclick="newSummary()"
-          id="newBtn"
-          class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold py-3 rounded-lg"
+          onclick="resetWorkspace()"
+          id="newWorkspaceBtn"
+          class="w-full bg-white text-slate-900 py-3 rounded-lg font-medium hover:bg-slate-100 transition"
         >
-          + New Summary
+          New Workspace
         </button>
 
         <a
           href="history.html"
           id="historyBtn"
-          class="block w-full text-center bg-zinc-800 hover:bg-zinc-700 text-zinc-100 py-3 rounded-lg"
+          class="block w-full text-center border border-slate-700 text-white py-3 rounded-lg hover:bg-slate-800 transition"
         >
-          Open Full History
+          View History
         </a>
       </div>
 
-      <div class="px-4 pb-2">
-        <h2 id="recentHeading" class="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
-          Recent Summaries
+      <div class="px-4 pt-2">
+        <h2 id="recentTitle" class="text-xs uppercase tracking-wide text-slate-400 font-semibold mb-3">
+          Recent Results
         </h2>
       </div>
 
-      <div id="sidebarHistory" class="flex-1 overflow-y-auto px-3 pb-4 space-y-2">
-        <p class="text-zinc-500 text-sm px-1">Loading history...</p>
+      <div id="sidebarHistory" class="flex-1 overflow-y-auto px-4 pb-4 space-y-3">
+        <p class="text-sm text-slate-400">Loading history...</p>
       </div>
 
-      <div id="sidebarBottom" class="p-4 border-t border-zinc-800">
+      <div class="p-4 border-t border-slate-800">
         <button
           onclick="logout()"
           id="logoutBtn"
-          class="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg"
+          class="w-full bg-red-500 text-white py-3 rounded-lg hover:bg-red-600 transition"
         >
           Logout
         </button>
       </div>
     </aside>
 
-    <main class="flex-1 overflow-y-auto">
-      <div class="max-w-4xl mx-auto p-6">
+    <!-- Main -->
+    <main class="flex-1">
+      <div class="max-w-6xl mx-auto px-4 py-6 md:px-8 md:py-8">
 
-        <div class="mb-6">
-          <h2 id="pageTitle" class="text-3xl font-bold mb-2">Create Summary</h2>
-          <p id="pageSub" class="text-zinc-400">
-            Generate concise notes from text or text-based PDFs.
-          </p>
-        </div>
-
-        <div id="output" class="hidden bg-zinc-900 border border-zinc-800 rounded-2xl p-5 min-h-[180px] mb-6"></div>
-
-        <div id="inputCard" class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5">
-          <label id="textLabel" class="block text-sm font-medium text-zinc-300 mb-2">Enter Text</label>
-
-          <textarea
-            id="text"
-            rows="8"
-            class="w-full bg-zinc-950 border border-zinc-700 rounded-xl p-4 text-zinc-100 placeholder-zinc-500 mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            placeholder="Paste your study content here..."
-          ></textarea>
+        <!-- Header -->
+        <div class="flex items-start justify-between gap-4 mb-6">
+          <div>
+            <h2 id="pageTitle" class="text-3xl md:text-4xl font-bold tracking-tight">Workspace</h2>
+            <p id="pageSubTitle" class="text-slate-600 mt-2">
+              Process text input, uploaded PDFs, or spoken input in one place.
+            </p>
+          </div>
 
           <button
-            onclick="summarizeText()"
-            id="generateBtn"
-            class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold py-3 rounded-xl mb-4 flex items-center justify-center gap-2"
+            id="themeBtn"
+            onclick="toggleTheme()"
+            class="px-4 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 transition text-sm"
           >
-            Generate Summary
-            <span>➤</span>
+            Dark Mode
           </button>
+        </div>
 
-          <div id="orText" class="text-center text-zinc-500 mb-4">OR</div>
+        <!-- Feature Card -->
+        <div id="featureCard" class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-6">
 
-          <label id="pdfLabel" class="block text-sm font-medium text-zinc-300 mb-2">Upload PDF</label>
+          <!-- Tabs -->
+          <div id="tabBar" class="border-b border-slate-200 px-5 md:px-6">
+            <div class="flex flex-wrap gap-6 text-sm font-medium">
+              <button
+                id="tabSummary"
+                onclick="switchTab('summary')"
+                class="py-4 border-b-2 border-slate-900 text-slate-900"
+              >
+                Summary
+              </button>
 
-          <div class="flex gap-2">
-            <input
-              type="file"
-              id="pdfFile"
-              accept=".pdf"
-              class="flex-1 bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-zinc-300"
-            />
+              <button
+                id="tabGrammar"
+                onclick="switchTab('grammar')"
+                class="py-4 border-b-2 border-transparent text-slate-500 hover:text-slate-900"
+              >
+                Grammar Check
+              </button>
 
-            <button
-              onclick="uploadPDF()"
-              id="pdfSendBtn"
-              class="bg-blue-500 hover:bg-blue-600 text-white px-5 rounded-xl text-lg font-semibold"
-              title="Upload PDF"
-            >
-              ➤
-            </button>
+              <button
+                id="tabPdf"
+                onclick="switchTab('pdf')"
+                class="py-4 border-b-2 border-transparent text-slate-500 hover:text-slate-900"
+              >
+                PDF Upload
+              </button>
+            </div>
           </div>
+
+          <div class="p-5 md:p-6">
+
+            <!-- Summary / Grammar Panel -->
+            <section id="textPanel">
+              <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-5">
+                <div>
+                  <h3 id="panelTitle" class="text-xl font-semibold">Text Summary</h3>
+                  <p id="panelDesc" class="text-sm text-slate-500 mt-1">
+                    Paste text and generate a concise summary with key points.
+                  </p>
+                </div>
+
+                <div id="summaryLengthWrap" class="w-full lg:w-60">
+                  <label id="summaryLengthLabel" class="block text-sm font-medium text-slate-700 mb-2">
+                    Summary Length
+                  </label>
+                  <select
+                    id="summaryLength"
+                    class="w-full border border-slate-300 rounded-lg px-4 py-3 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  >
+                    <option value="short">Short</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="long">Long</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                <label id="textLabel" for="text" class="text-sm font-medium text-slate-700">Input Text</label>
+
+                <div class="flex items-center gap-2">
+                  <button
+                    onclick="startListening()"
+                    type="button"
+                    id="speakBtn"
+                    class="bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition text-sm"
+                  >
+                    Speak
+                  </button>
+
+                  <button
+                    onclick="stopListening()"
+                    type="button"
+                    id="stopBtn"
+                    class="bg-slate-200 text-slate-800 px-4 py-2 rounded-lg hover:bg-slate-300 transition text-sm"
+                  >
+                    Stop
+                  </button>
+                </div>
+              </div>
+
+              <p id="voiceStatus" class="text-sm text-slate-500 mb-4">Voice input is off</p>
+
+              <textarea
+                id="text"
+                rows="12"
+                placeholder="Paste your content here..."
+                class="w-full border border-slate-300 rounded-xl p-4 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 resize-none"
+              ></textarea>
+
+              <div class="flex flex-wrap gap-3 mt-4">
+                <button
+                  id="runBtn"
+                  onclick="handleMainAction()"
+                  class="bg-slate-900 text-white px-6 py-3 rounded-lg hover:bg-slate-800 transition"
+                >
+                  Generate Summary
+                </button>
+
+                <button
+                  onclick="copyOutput()"
+                  id="copyBtn"
+                  class="bg-slate-200 text-slate-800 px-6 py-3 rounded-lg hover:bg-slate-300 transition"
+                >
+                  Copy Result
+                </button>
+
+                <button
+                  onclick="saveSummary()"
+                  id="saveBtn"
+                  class="bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition"
+                >
+                  Save Result
+                </button>
+              </div>
+            </section>
+
+            <!-- PDF Panel -->
+            <section id="pdfPanel" class="hidden">
+              <div class="mb-5">
+                <h3 id="pdfTitle" class="text-xl font-semibold">PDF Summary</h3>
+                <p id="pdfDesc" class="text-sm text-slate-500 mt-1">
+                  Upload a text-based PDF to generate summary and key points.
+                </p>
+              </div>
+
+              <div id="pdfUploadCard" class="border border-dashed border-slate-300 rounded-xl p-5 bg-slate-50">
+                <label id="pdfLabel" class="block text-sm font-medium text-slate-700 mb-3">Choose PDF File</label>
+
+                <div class="flex flex-col md:flex-row gap-3">
+                  <input
+                    type="file"
+                    id="pdfFile"
+                    accept=".pdf"
+                    class="flex-1 border border-slate-300 rounded-lg px-4 py-3 bg-white text-slate-900"
+                  />
+
+                  <button
+                    onclick="uploadPDF()"
+                    id="uploadBtn"
+                    class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition"
+                  >
+                    Upload PDF
+                  </button>
+                </div>
+
+                <p id="pdfNote" class="text-xs text-slate-500 mt-3">
+                  Scanned PDFs may not return readable text. Text-based PDFs work best.
+                </p>
+              </div>
+            </section>
+
+          </div>
+        </div>
+
+        <!-- Output Card -->
+        <div id="outputCard" class="hidden bg-white border border-slate-200 rounded-2xl shadow-sm p-5 md:p-6">
+          <div class="flex items-center justify-between gap-3 mb-5">
+            <div>
+              <h3 id="outputTitle" class="text-2xl font-semibold text-slate-900">Result</h3>
+              <p id="outputSubTitle" class="text-sm text-slate-500 mt-1">Processed result will appear here.</p>
+            </div>
+
+            <span id="resultTag" class="text-xs px-3 py-1 rounded-full bg-slate-100 text-slate-700">
+              Ready
+            </span>
+          </div>
+
+          <div id="output" class="text-slate-800 leading-7"></div>
         </div>
 
       </div>
     </main>
-
   </div>
 
   <script>
     const BASE_URL = "https://notegenius-ai-t75e.onrender.com";
+
+    let recognition;
+    let isListening = false;
+    let currentTheme = localStorage.getItem("theme") || "light";
+    let currentTab = "summary";
+    let currentData = null;
 
     if (!localStorage.getItem("user")) {
       window.location.href = "login.html";
@@ -139,66 +275,219 @@
       window.location.href = "login.html";
     }
 
-    function newSummary() {
-      document.getElementById("text").value = "";
-      document.getElementById("pdfFile").value = "";
-      const output = document.getElementById("output");
-      output.innerHTML = "";
-      output.classList.add("hidden");
-      window.currentData = null;
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.innerText = text || "";
+      return div.innerHTML;
     }
 
-    function renderOutput(data) {
+    function resetWorkspace() {
+      document.getElementById("text").value = "";
+      document.getElementById("pdfFile").value = "";
+      document.getElementById("output").innerHTML = "";
+      document.getElementById("outputCard").classList.add("hidden");
+      document.getElementById("summaryLength").value = "medium";
+      document.getElementById("voiceStatus").innerText = "Voice input is off";
+      currentData = null;
+      switchTab("summary");
+    }
+
+    function switchTab(tabName) {
+      currentTab = tabName;
+
+      const tabSummary = document.getElementById("tabSummary");
+      const tabGrammar = document.getElementById("tabGrammar");
+      const tabPdf = document.getElementById("tabPdf");
+
+      const textPanel = document.getElementById("textPanel");
+      const pdfPanel = document.getElementById("pdfPanel");
+
+      const panelTitle = document.getElementById("panelTitle");
+      const panelDesc = document.getElementById("panelDesc");
+      const summaryLengthWrap = document.getElementById("summaryLengthWrap");
+      const runBtn = document.getElementById("runBtn");
+
+      [tabSummary, tabGrammar, tabPdf].forEach(btn => {
+        btn.className = "py-4 border-b-2 border-transparent text-slate-500 hover:text-slate-900";
+      });
+
+      if (tabName === "summary") {
+        tabSummary.className = "py-4 border-b-2 border-slate-900 text-slate-900";
+        textPanel.classList.remove("hidden");
+        pdfPanel.classList.add("hidden");
+        panelTitle.innerText = "Text Summary";
+        panelDesc.innerText = "Paste text and generate a concise summary with key points.";
+        summaryLengthWrap.classList.remove("hidden");
+        runBtn.innerText = "Generate Summary";
+      } else if (tabName === "grammar") {
+        tabGrammar.className = "py-4 border-b-2 border-slate-900 text-slate-900";
+        textPanel.classList.remove("hidden");
+        pdfPanel.classList.add("hidden");
+        panelTitle.innerText = "Grammar Check";
+        panelDesc.innerText = "Review text and get corrected output with suggestions.";
+        summaryLengthWrap.classList.add("hidden");
+        runBtn.innerText = "Check Grammar";
+      } else {
+        tabPdf.className = "py-4 border-b-2 border-slate-900 text-slate-900";
+        textPanel.classList.add("hidden");
+        pdfPanel.classList.remove("hidden");
+      }
+    }
+
+    function renderSummary(data, label = "Summary") {
+      const outputCard = document.getElementById("outputCard");
       const output = document.getElementById("output");
+      const outputTitle = document.getElementById("outputTitle");
+      const outputSubTitle = document.getElementById("outputSubTitle");
+      const resultTag = document.getElementById("resultTag");
+
+      outputTitle.innerText = label === "PDF Summary" ? "PDF Summary Result" : "Summary Result";
+      outputSubTitle.innerText = "Generated summary and key points are shown below.";
+      resultTag.innerText = label;
 
       let html = `
-        <div class="mb-5">
-          <h3 class="text-xl font-bold mb-2">Summary</h3>
-          <p class="leading-7">${data.summary || "No summary available"}</p>
+        <div class="mb-6">
+          <h4 class="text-lg font-semibold mb-2 text-current">Summary</h4>
+          <p>${escapeHtml(data.summary || "No summary available")}</p>
         </div>
       `;
 
       if (data.points && data.points.length > 0) {
         html += `
-          <div class="mb-5">
-            <h3 class="text-xl font-bold mb-2">Key Points</h3>
-            <ul class="list-disc ml-6 space-y-2">
-              ${data.points.map(point => `<li>${point}</li>`).join("")}
+          <div>
+            <h4 class="text-lg font-semibold mb-2 text-current">Key Points</h4>
+            <ul class="list-disc pl-5 space-y-2">
+              ${data.points.map(point => `<li>${escapeHtml(point)}</li>`).join("")}
             </ul>
           </div>
         `;
       }
 
+      output.innerHTML = html;
+      outputCard.classList.remove("hidden");
+
+      currentData = {
+        type: "summary",
+        summary: data.summary || "",
+        points: data.points || []
+      };
+    }
+
+    function renderGrammar(data) {
+      const outputCard = document.getElementById("outputCard");
+      const output = document.getElementById("output");
+      const outputTitle = document.getElementById("outputTitle");
+      const outputSubTitle = document.getElementById("outputSubTitle");
+      const resultTag = document.getElementById("resultTag");
+
+      outputTitle.innerText = "Grammar Check Result";
+      outputSubTitle.innerText = "Corrected text and suggestions are shown below.";
+      resultTag.innerText = "Grammar";
+
+      const suggestions = data.suggestions || [];
+
+      let html = `
+        <div class="mb-6">
+          <h4 class="text-lg font-semibold mb-2 text-current">Corrected Text</h4>
+          <p>${escapeHtml(data.correctedText || "")}</p>
+        </div>
+      `;
+
       html += `
-        <button
-          onclick="saveSummary()"
-          class="mt-2 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg"
-        >
-          Save Summary
-        </button>
+        <div>
+          <h4 class="text-lg font-semibold mb-2 text-current">Suggestions</h4>
+          ${
+            suggestions.length > 0
+              ? `<ul class="list-disc pl-5 space-y-2">
+                  ${suggestions.map(item => `<li>${escapeHtml(item)}</li>`).join("")}
+                 </ul>`
+              : `<p>No grammar suggestions found.</p>`
+          }
+        </div>
       `;
 
       output.innerHTML = html;
-      output.classList.remove("hidden");
-      window.currentData = data;
+      outputCard.classList.remove("hidden");
 
-      output.scrollIntoView({ behavior: "smooth" });
+      currentData = {
+        type: "grammar",
+        summary: data.correctedText || "",
+        points: suggestions
+      };
+    }
+
+    async function handleMainAction() {
+      if (currentTab === "summary") {
+        await summarizeText();
+      } else if (currentTab === "grammar") {
+        await checkGrammar();
+      }
     }
 
     async function summarizeText() {
       const text = document.getElementById("text").value.trim();
+      const summaryLength = document.getElementById("summaryLength").value;
+      const outputCard = document.getElementById("outputCard");
       const output = document.getElementById("output");
+      const resultTag = document.getElementById("resultTag");
+      const outputTitle = document.getElementById("outputTitle");
+      const outputSubTitle = document.getElementById("outputSubTitle");
 
       if (!text) {
-        alert("Enter text first");
+        alert("Enter text first.");
         return;
       }
 
-      output.classList.remove("hidden");
-      output.innerHTML = "<p class='text-zinc-400'>Generating summary...</p>";
+      outputCard.classList.remove("hidden");
+      outputTitle.innerText = "Summary Result";
+      outputSubTitle.innerText = "Generating summary from your input.";
+      resultTag.innerText = "Processing";
+      output.innerHTML = "<p class='text-slate-500'>Generating summary...</p>";
 
       try {
         const res = await fetch(`${BASE_URL}/summarize`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ text, length: summaryLength })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          output.innerHTML = `<p class="text-red-500">${escapeHtml(data.summary || data.message || "Unable to generate summary.")}</p>`;
+          return;
+        }
+
+        renderSummary(data, "Summary");
+      } catch (err) {
+        console.log("Summarize error:", err);
+        output.innerHTML = "<p class='text-red-500'>Unable to generate summary.</p>";
+      }
+    }
+
+    async function checkGrammar() {
+      const text = document.getElementById("text").value.trim();
+      const outputCard = document.getElementById("outputCard");
+      const output = document.getElementById("output");
+      const resultTag = document.getElementById("resultTag");
+      const outputTitle = document.getElementById("outputTitle");
+      const outputSubTitle = document.getElementById("outputSubTitle");
+
+      if (!text) {
+        alert("Enter text first.");
+        return;
+      }
+
+      outputCard.classList.remove("hidden");
+      outputTitle.innerText = "Grammar Check Result";
+      outputSubTitle.innerText = "Checking your text for basic grammar corrections.";
+      resultTag.innerText = "Processing";
+      output.innerHTML = "<p class='text-slate-500'>Checking grammar...</p>";
+
+      try {
+        const res = await fetch(`${BASE_URL}/grammar-check`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -209,28 +498,35 @@
         const data = await res.json();
 
         if (!res.ok) {
-          output.innerHTML = `<p class='text-red-400'>${data.summary || data.message || "Error generating summary"}</p>`;
+          output.innerHTML = `<p class="text-red-500">${escapeHtml(data.message || "Unable to check grammar.")}</p>`;
           return;
         }
 
-        renderOutput(data);
+        renderGrammar(data);
       } catch (err) {
-        console.log("Summarize error:", err);
-        output.innerHTML = "<p class='text-red-400'>Error generating summary</p>";
+        console.log("Grammar error:", err);
+        output.innerHTML = "<p class='text-red-500'>Unable to check grammar.</p>";
       }
     }
 
     async function uploadPDF() {
       const file = document.getElementById("pdfFile").files[0];
+      const outputCard = document.getElementById("outputCard");
       const output = document.getElementById("output");
+      const resultTag = document.getElementById("resultTag");
+      const outputTitle = document.getElementById("outputTitle");
+      const outputSubTitle = document.getElementById("outputSubTitle");
 
       if (!file) {
-        alert("Choose PDF file");
+        alert("Choose a PDF file.");
         return;
       }
 
-      output.classList.remove("hidden");
-      output.innerHTML = "<p class='text-zinc-400'>Processing PDF...</p>";
+      outputCard.classList.remove("hidden");
+      outputTitle.innerText = "PDF Summary Result";
+      outputSubTitle.innerText = "Extracting text and generating summary from the uploaded PDF.";
+      resultTag.innerText = "Processing";
+      output.innerHTML = "<p class='text-slate-500'>Processing PDF...</p>";
 
       const formData = new FormData();
       formData.append("file", file);
@@ -244,14 +540,14 @@
         const data = await res.json();
 
         if (!res.ok) {
-          output.innerHTML = `<p class='text-red-400'>${data.summary || data.message || "PDF upload failed"}</p>`;
+          output.innerHTML = `<p class="text-red-500">${escapeHtml(data.summary || data.message || "PDF upload failed.")}</p>`;
           return;
         }
 
-        renderOutput(data);
+        renderSummary(data, "PDF Summary");
       } catch (err) {
         console.log("PDF upload error:", err);
-        output.innerHTML = "<p class='text-red-400'>PDF upload failed</p>";
+        output.innerHTML = "<p class='text-red-500'>PDF upload failed.</p>";
       }
     }
 
@@ -259,8 +555,8 @@
       const user = JSON.parse(localStorage.getItem("user"));
       const textValue = document.getElementById("text").value.trim();
 
-      if (!window.currentData) {
-        alert("Generate summary first");
+      if (!currentData) {
+        alert("No result available to save.");
         return;
       }
 
@@ -277,24 +573,48 @@
           },
           body: JSON.stringify({
             userId: user._id || user.id,
-            text: textValue || "[PDF Uploaded Content]",
-            summary: window.currentData.summary,
-            points: window.currentData.points || []
+            text: textValue || "[Generated from input]",
+            summary: currentData.summary,
+            points: currentData.points || []
           })
         });
 
         const data = await res.json();
 
         if (res.ok) {
-          alert("Saved successfully!");
+          alert("Result saved successfully.");
           loadSidebarHistory();
         } else {
-          alert(data.message || "Save failed");
+          alert(data.message || "Unable to save result.");
         }
       } catch (err) {
         console.log("Save error:", err);
-        alert("Save failed");
+        alert("Unable to save result.");
       }
+    }
+
+    function copyOutput() {
+      if (!currentData || !currentData.summary) {
+        alert("No result available to copy.");
+        return;
+      }
+
+      let textToCopy = currentData.summary;
+
+      if (currentData.points && currentData.points.length > 0) {
+        textToCopy += "\n\nDetails:\n";
+        currentData.points.forEach((item, index) => {
+          textToCopy += `${index + 1}. ${item}\n`;
+        });
+      }
+
+      navigator.clipboard.writeText(textToCopy)
+        .then(() => {
+          alert("Result copied.");
+        })
+        .catch(() => {
+          alert("Copy failed.");
+        });
     }
 
     async function loadSidebarHistory() {
@@ -302,7 +622,7 @@
       const container = document.getElementById("sidebarHistory");
 
       if (!user || (!user._id && !user.id)) {
-        container.innerHTML = `<p class="text-zinc-500 text-sm px-1">Login again to load history.</p>`;
+        container.innerHTML = `<p class="text-sm text-slate-400">Login again to load history.</p>`;
         return;
       }
 
@@ -311,32 +631,30 @@
         const data = await res.json();
 
         if (!data || data.length === 0) {
-          container.innerHTML = `<p class="text-zinc-500 text-sm px-1">No saved summaries yet.</p>`;
+          container.innerHTML = `<p class="text-sm text-slate-400">No saved results yet.</p>`;
           return;
         }
 
         let html = "";
 
-        data.slice(0, 10).forEach(item => {
-          const safeSummary = item.summary ? item.summary.substring(0, 80) : "Saved summary";
-          html += `
-            <div class="bg-zinc-800 hover:bg-zinc-700 rounded-lg p-3">
-              <div class="flex justify-between items-start gap-2">
-                <div class="cursor-pointer flex-1" onclick='showHistoryItem(${JSON.stringify(item).replace(/'/g, "&apos;")})'>
-                  <p class="text-sm font-medium text-zinc-100 line-clamp-2">
-                    ${safeSummary}
-                  </p>
-                  <p class="text-xs text-zinc-400 mt-1">
-                    ${new Date(item.createdAt).toLocaleString()}
-                  </p>
-                </div>
+        data.slice(0, 8).forEach(item => {
+          const shortText = (item.summary || "Saved result").substring(0, 55);
 
+          html += `
+            <div class="bg-slate-800 rounded-lg p-3">
+              <p class="text-sm text-white mb-2">${escapeHtml(shortText)}...</p>
+              <div class="flex items-center justify-between gap-2">
+                <button
+                  onclick='showSavedItem(${JSON.stringify(item).replace(/'/g, "&apos;")})'
+                  class="text-xs text-slate-300 hover:text-white"
+                >
+                  Open
+                </button>
                 <button
                   onclick="deleteSummary('${item._id}')"
-                  class="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded"
-                  title="Delete"
+                  class="text-xs text-red-300 hover:text-red-200"
                 >
-                  ✕
+                  Delete
                 </button>
               </div>
             </div>
@@ -346,19 +664,19 @@
         container.innerHTML = html;
       } catch (err) {
         console.log("Sidebar history error:", err);
-        container.innerHTML = `<p class="text-red-400 text-sm px-1">Failed to load history</p>`;
+        container.innerHTML = `<p class="text-sm text-red-300">Failed to load history.</p>`;
       }
     }
 
-    function showHistoryItem(item) {
-      renderOutput({
+    function showSavedItem(item) {
+      renderSummary({
         summary: item.summary,
         points: item.points || []
-      });
+      }, "Saved");
     }
 
     async function deleteSummary(id) {
-      const confirmDelete = confirm("Delete this summary?");
+      const confirmDelete = confirm("Delete this saved result?");
       if (!confirmDelete) return;
 
       try {
@@ -370,96 +688,147 @@
 
         if (res.ok) {
           loadSidebarHistory();
-          alert("Deleted successfully!");
+          alert("Deleted successfully.");
         } else {
-          alert(data.message || "Delete failed");
+          alert(data.message || "Delete failed.");
         }
       } catch (err) {
         console.log("Delete error:", err);
-        alert("Delete failed");
+        alert("Delete failed.");
+      }
+    }
+
+    function startListening() {
+      const status = document.getElementById("voiceStatus");
+      const textBox = document.getElementById("text");
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+      if (!SpeechRecognition) {
+        alert("Voice input is not supported in this browser.");
+        return;
+      }
+
+      if (isListening) return;
+
+      recognition = new SpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.interimResults = false;
+      recognition.continuous = true;
+
+      recognition.start();
+      isListening = true;
+      status.innerText = "Listening... Speak now";
+
+      recognition.onresult = function(event) {
+        let transcript = "";
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript + " ";
+        }
+
+        textBox.value = (textBox.value + " " + transcript.trim()).trim();
+      };
+
+      recognition.onerror = function(event) {
+        console.log("Voice input error:", event.error);
+        status.innerText = "Voice input failed";
+        isListening = false;
+      };
+
+      recognition.onend = function() {
+        if (isListening) {
+          status.innerText = "Voice input stopped";
+          isListening = false;
+        }
+      };
+    }
+
+    function stopListening() {
+      const status = document.getElementById("voiceStatus");
+
+      if (recognition && isListening) {
+        recognition.stop();
+        isListening = false;
+        status.innerText = "Voice input is off";
       }
     }
 
     function applyTheme(theme) {
       const body = document.getElementById("pageBody");
       const sidebar = document.getElementById("sidebar");
-      const sidebarTop = document.getElementById("sidebarTop");
-      const sidebarBottom = document.getElementById("sidebarBottom");
-      const brandText = document.getElementById("brandText");
-      const recentHeading = document.getElementById("recentHeading");
-      const inputCard = document.getElementById("inputCard");
+      const featureCard = document.getElementById("featureCard");
+      const outputCard = document.getElementById("outputCard");
       const output = document.getElementById("output");
-      const textArea = document.getElementById("text");
+      const textBox = document.getElementById("text");
       const themeBtn = document.getElementById("themeBtn");
-      const newBtn = document.getElementById("newBtn");
-      const historyBtn = document.getElementById("historyBtn");
-      const logoutBtn = document.getElementById("logoutBtn");
-      const pageSub = document.getElementById("pageSub");
-      const textLabel = document.getElementById("textLabel");
-      const pdfLabel = document.getElementById("pdfLabel");
-      const orText = document.getElementById("orText");
+      const pageSubTitle = document.getElementById("pageSubTitle");
+      const panelDesc = document.getElementById("panelDesc");
+      const voiceStatus = document.getElementById("voiceStatus");
+      const outputTitle = document.getElementById("outputTitle");
+      const outputSubTitle = document.getElementById("outputSubTitle");
+      const summaryLength = document.getElementById("summaryLength");
       const pdfFile = document.getElementById("pdfFile");
-      const pdfSendBtn = document.getElementById("pdfSendBtn");
+      const recentTitle = document.getElementById("recentTitle");
 
-      if (theme === "light") {
-        body.className = "bg-gray-100 text-gray-900 min-h-screen";
-        sidebar.className = "w-72 bg-white border-r border-gray-300 flex flex-col";
-        sidebarTop.className = "p-4 border-b border-gray-300";
-        sidebarBottom.className = "p-4 border-t border-gray-300";
-        brandText.className = "text-sm text-gray-500 mt-1";
-        recentHeading.className = "text-sm font-semibold text-gray-500 uppercase tracking-wide";
-        inputCard.className = "bg-white border border-gray-300 rounded-2xl p-5";
-        output.className = output.classList.contains("hidden")
-          ? "hidden bg-white border border-gray-300 rounded-2xl p-5 min-h-[180px] mb-6"
-          : "bg-white border border-gray-300 rounded-2xl p-5 min-h-[180px] mb-6";
-        textArea.className = "w-full bg-white border border-gray-300 rounded-xl p-4 text-gray-900 placeholder-gray-500 mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500";
-        themeBtn.innerHTML = "🌙";
-        themeBtn.className = "w-10 h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-lg";
-        newBtn.className = "w-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold py-3 rounded-lg";
-        historyBtn.className = "block w-full text-center bg-gray-200 hover:bg-gray-300 text-gray-900 py-3 rounded-lg";
-        logoutBtn.className = "w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg";
-        pageSub.className = "text-gray-500";
-        textLabel.className = "block text-sm font-medium text-gray-700 mb-2";
-        pdfLabel.className = "block text-sm font-medium text-gray-700 mb-2";
-        orText.className = "text-center text-gray-500 mb-4";
-        pdfFile.className = "flex-1 bg-white border border-gray-300 rounded-xl p-3 text-gray-700";
-        pdfSendBtn.className = "bg-blue-500 hover:bg-blue-600 text-white px-5 rounded-xl text-lg font-semibold";
+      if (theme === "dark") {
+        body.className = "min-h-screen bg-slate-950 text-white";
+        if (sidebar) sidebar.className = "hidden md:flex w-72 bg-black text-white flex-col";
+        if (featureCard) featureCard.className = "bg-slate-900 border border-slate-700 rounded-2xl shadow-sm overflow-hidden mb-6";
+        if (outputCard) {
+          if (outputCard.classList.contains("hidden")) {
+            outputCard.className = "hidden bg-slate-900 border border-slate-700 rounded-2xl shadow-sm p-5 md:p-6";
+          } else {
+            outputCard.className = "bg-slate-900 border border-slate-700 rounded-2xl shadow-sm p-5 md:p-6";
+          }
+        }
+        if (output) output.className = "text-slate-100 leading-7";
+        if (textBox) textBox.className = "w-full border border-slate-600 rounded-xl p-4 bg-slate-950 text-white focus:outline-none focus:ring-2 focus:ring-white resize-none";
+        if (summaryLength) summaryLength.className = "w-full border border-slate-600 rounded-lg px-4 py-3 bg-slate-950 text-white focus:outline-none focus:ring-2 focus:ring-white";
+        if (pdfFile) pdfFile.className = "flex-1 border border-slate-600 rounded-lg px-4 py-3 bg-slate-950 text-white";
+        if (themeBtn) themeBtn.innerText = "Light Mode";
+        if (themeBtn) themeBtn.className = "px-4 py-2 rounded-lg border border-slate-600 bg-slate-900 hover:bg-slate-800 transition text-sm text-white";
+        if (pageSubTitle) pageSubTitle.className = "text-slate-400 mt-2";
+        if (panelDesc) panelDesc.className = "text-sm text-slate-400 mt-1";
+        if (voiceStatus) voiceStatus.className = "text-sm text-slate-400 mb-4";
+        if (outputTitle) outputTitle.className = "text-2xl font-semibold text-white";
+        if (outputSubTitle) outputSubTitle.className = "text-sm text-slate-400 mt-1";
+        if (recentTitle) recentTitle.className = "text-xs uppercase tracking-wide text-slate-500 font-semibold mb-3";
       } else {
-        body.className = "bg-zinc-950 text-zinc-100 min-h-screen";
-        sidebar.className = "w-72 bg-zinc-900 border-r border-zinc-800 flex flex-col";
-        sidebarTop.className = "p-4 border-b border-zinc-800";
-        sidebarBottom.className = "p-4 border-t border-zinc-800";
-        brandText.className = "text-sm text-zinc-400 mt-1";
-        recentHeading.className = "text-sm font-semibold text-zinc-400 uppercase tracking-wide";
-        inputCard.className = "bg-zinc-900 border border-zinc-800 rounded-2xl p-5";
-        output.className = output.classList.contains("hidden")
-          ? "hidden bg-zinc-900 border border-zinc-800 rounded-2xl p-5 min-h-[180px] mb-6"
-          : "bg-zinc-900 border border-zinc-800 rounded-2xl p-5 min-h-[180px] mb-6";
-        textArea.className = "w-full bg-zinc-950 border border-zinc-700 rounded-xl p-4 text-zinc-100 placeholder-zinc-500 mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500";
-        themeBtn.innerHTML = "☀️";
-        themeBtn.className = "w-10 h-10 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-lg";
-        newBtn.className = "w-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold py-3 rounded-lg";
-        historyBtn.className = "block w-full text-center bg-zinc-800 hover:bg-zinc-700 text-zinc-100 py-3 rounded-lg";
-        logoutBtn.className = "w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg";
-        pageSub.className = "text-zinc-400";
-        textLabel.className = "block text-sm font-medium text-zinc-300 mb-2";
-        pdfLabel.className = "block text-sm font-medium text-zinc-300 mb-2";
-        orText.className = "text-center text-zinc-500 mb-4";
-        pdfFile.className = "flex-1 bg-zinc-950 border border-zinc-700 rounded-xl p-3 text-zinc-300";
-        pdfSendBtn.className = "bg-blue-500 hover:bg-blue-600 text-white px-5 rounded-xl text-lg font-semibold";
+        body.className = "min-h-screen bg-slate-50 text-slate-900";
+        if (sidebar) sidebar.className = "hidden md:flex w-72 bg-slate-900 text-white flex-col";
+        if (featureCard) featureCard.className = "bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden mb-6";
+        if (outputCard) {
+          if (outputCard.classList.contains("hidden")) {
+            outputCard.className = "hidden bg-white border border-slate-200 rounded-2xl shadow-sm p-5 md:p-6";
+          } else {
+            outputCard.className = "bg-white border border-slate-200 rounded-2xl shadow-sm p-5 md:p-6";
+          }
+        }
+        if (output) output.className = "text-slate-800 leading-7";
+        if (textBox) textBox.className = "w-full border border-slate-300 rounded-xl p-4 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 resize-none";
+        if (summaryLength) summaryLength.className = "w-full border border-slate-300 rounded-lg px-4 py-3 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900";
+        if (pdfFile) pdfFile.className = "flex-1 border border-slate-300 rounded-lg px-4 py-3 bg-white text-slate-900";
+        if (themeBtn) themeBtn.innerText = "Dark Mode";
+        if (themeBtn) themeBtn.className = "px-4 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 transition text-sm";
+        if (pageSubTitle) pageSubTitle.className = "text-slate-600 mt-2";
+        if (panelDesc) panelDesc.className = "text-sm text-slate-500 mt-1";
+        if (voiceStatus) voiceStatus.className = "text-sm text-slate-500 mb-4";
+        if (outputTitle) outputTitle.className = "text-2xl font-semibold text-slate-900";
+        if (outputSubTitle) outputSubTitle.className = "text-sm text-slate-500 mt-1";
+        if (recentTitle) recentTitle.className = "text-xs uppercase tracking-wide text-slate-400 font-semibold mb-3";
       }
     }
 
     function toggleTheme() {
-      const currentTheme = localStorage.getItem("theme") || "dark";
-      const newTheme = currentTheme === "dark" ? "light" : "dark";
-      localStorage.setItem("theme", newTheme);
-      applyTheme(newTheme);
+      currentTheme = currentTheme === "light" ? "dark" : "light";
+      localStorage.setItem("theme", currentTheme);
+      applyTheme(currentTheme);
     }
 
-    const savedTheme = localStorage.getItem("theme") || "dark";
-    applyTheme(savedTheme);
+    switchTab("summary");
+    applyTheme(currentTheme);
     loadSidebarHistory();
   </script>
+
 </body>
 </html>
