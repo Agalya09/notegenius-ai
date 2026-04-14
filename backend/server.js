@@ -12,10 +12,8 @@ const summaryRoutes = require("./routes/Summary");
 
 const app = express();
 
-// CORS
 const corsOptions = {
   origin: function (origin, callback) {
-    // allow requests with no origin (Postman, direct server checks, etc.)
     if (!origin) {
       return callback(null, true);
     }
@@ -27,8 +25,7 @@ const corsOptions = {
       "http://localhost:3000"
     ];
 
-    const isNetlifyPreview =
-      origin.endsWith(".netlify.app");
+    const isNetlifyPreview = origin.endsWith(".netlify.app");
 
     if (allowedOrigins.includes(origin) || isNetlifyPreview) {
       return callback(null, true);
@@ -42,15 +39,12 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
-
 app.use(express.json());
 
-// MongoDB
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.log("MongoDB error:", err.message));
 
-// uploads folder
 const uploadsDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -58,11 +52,9 @@ if (!fs.existsSync(uploadsDir)) {
 
 const upload = multer({ dest: uploadsDir });
 
-// routes
 app.use("/api/auth", authRoutes);
 app.use("/api/summary", summaryRoutes);
 
-// stop words
 const stopWords = new Set([
   "the", "is", "are", "a", "an", "and", "or", "of", "to", "in", "on", "for", "with",
   "by", "as", "at", "from", "that", "this", "it", "be", "was", "were", "has", "have",
@@ -112,7 +104,7 @@ function scoreSentences(sentences, freq) {
   });
 }
 
-function generateSummaryAndPoints(text) {
+function generateSummaryAndPoints(text, length = "medium") {
   const cleanText = (text || "").trim();
   const sentences = splitSentences(cleanText);
 
@@ -126,15 +118,26 @@ function generateSummaryAndPoints(text) {
   const freq = getWordFrequency(cleanText);
   const scored = scoreSentences(sentences, freq);
 
+  let summaryCount = 3;
+  let pointCount = 5;
+
+  if (length === "short") {
+    summaryCount = 2;
+    pointCount = 3;
+  } else if (length === "long") {
+    summaryCount = 5;
+    pointCount = 7;
+  }
+
   const summarySentences = [...scored]
     .sort((a, b) => b.score - a.score)
-    .slice(0, Math.min(3, sentences.length))
+    .slice(0, Math.min(summaryCount, sentences.length))
     .sort((a, b) => a.index - b.index)
     .map((item) => item.sentence);
 
   const keyPoints = [...scored]
     .sort((a, b) => b.score - a.score)
-    .slice(0, Math.min(5, sentences.length))
+    .slice(0, Math.min(pointCount, sentences.length))
     .sort((a, b) => a.index - b.index)
     .map((item) => item.sentence.replace(/[.?!]+$/, "").trim());
 
@@ -148,10 +151,51 @@ function generateSummaryAndPoints(text) {
   };
 }
 
-// text summary
+function basicGrammarCheck(text) {
+  let correctedText = text;
+  const suggestions = [];
+
+  const corrections = [
+    { wrong: /\bi\b/g, correct: "I", message: "Changed 'i' to 'I'" },
+    { wrong: /\bdont\b/gi, correct: "don't", message: "Corrected 'dont' to 'don't'" },
+    { wrong: /\bcant\b/gi, correct: "can't", message: "Corrected 'cant' to 'can't'" },
+    { wrong: /\bwont\b/gi, correct: "won't", message: "Corrected 'wont' to 'won't'" },
+    { wrong: /\bim\b/gi, correct: "I'm", message: "Corrected 'im' to 'I'm'" },
+    { wrong: /\bu\b/gi, correct: "you", message: "Replaced informal 'u' with 'you'" },
+    { wrong: /\bur\b/gi, correct: "your", message: "Replaced informal 'ur' with 'your'" },
+    { wrong: /\bteh\b/gi, correct: "the", message: "Corrected 'teh' to 'the'" },
+    { wrong: /\brecieve\b/gi, correct: "receive", message: "Corrected 'recieve' to 'receive'" },
+    { wrong: /\bseperate\b/gi, correct: "separate", message: "Corrected 'seperate' to 'separate'" }
+  ];
+
+  corrections.forEach((item) => {
+    if (item.wrong.test(correctedText)) {
+      correctedText = correctedText.replace(item.wrong, item.correct);
+      suggestions.push(item.message);
+    }
+  });
+
+  correctedText = correctedText.replace(/\s+/g, " ").trim();
+
+  if (correctedText.length > 0) {
+    correctedText = correctedText.charAt(0).toUpperCase() + correctedText.slice(1);
+  }
+
+  if (correctedText && !/[.?!]$/.test(correctedText)) {
+    correctedText += ".";
+    suggestions.push("Added ending punctuation.");
+  }
+
+  return {
+    correctedText,
+    suggestions
+  };
+}
+
 app.post("/summarize", (req, res) => {
   try {
     const text = (req.body.text || "").trim();
+    const length = req.body.length || "medium";
 
     if (!text) {
       return res.status(400).json({
@@ -160,7 +204,7 @@ app.post("/summarize", (req, res) => {
       });
     }
 
-    const result = generateSummaryAndPoints(text);
+    const result = generateSummaryAndPoints(text, length);
     return res.json(result);
   } catch (err) {
     console.log("SUMMARIZE ERROR:", err);
@@ -171,7 +215,30 @@ app.post("/summarize", (req, res) => {
   }
 });
 
-// pdf summary
+app.post("/grammar-check", (req, res) => {
+  try {
+    const text = (req.body.text || "").trim();
+
+    if (!text) {
+      return res.status(400).json({
+        message: "No text provided"
+      });
+    }
+
+    const result = basicGrammarCheck(text);
+
+    return res.json({
+      correctedText: result.correctedText,
+      suggestions: result.suggestions
+    });
+  } catch (err) {
+    console.log("GRAMMAR CHECK ERROR:", err);
+    return res.status(500).json({
+      message: "Grammar check failed"
+    });
+  }
+});
+
 app.post("/upload", upload.single("file"), async (req, res) => {
   try {
     console.log("UPLOAD HIT");
@@ -199,7 +266,7 @@ app.post("/upload", upload.single("file"), async (req, res) => {
       });
     }
 
-    const result = generateSummaryAndPoints(text);
+    const result = generateSummaryAndPoints(text, "medium");
     return res.json(result);
   } catch (err) {
     console.log("UPLOAD ERROR:", err);
@@ -210,7 +277,6 @@ app.post("/upload", upload.single("file"), async (req, res) => {
   }
 });
 
-// health routes
 app.get("/test", (req, res) => {
   res.send("Backend working 🚀");
 });
