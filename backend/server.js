@@ -5,7 +5,7 @@ const multer = require("multer");
 const pdfParse = require("pdf-parse");
 const fs = require("fs");
 const path = require("path");
-const fetch = require("node-fetch");
+const fetch = global.fetch;
 require("dotenv").config();
 
 const authRoutes = require("./routes/auth");
