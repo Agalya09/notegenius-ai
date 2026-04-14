@@ -5,6 +5,7 @@ const multer = require("multer");
 const pdfParse = require("pdf-parse");
 const fs = require("fs");
 const path = require("path");
+const fetch = require("node-fetch");
 require("dotenv").config();
 
 const authRoutes = require("./routes/auth");
@@ -150,47 +151,6 @@ function generateSummaryAndPoints(text, length = "medium") {
   };
 }
 
-function basicGrammarCheck(text) {
-  let correctedText = text;
-  const suggestions = [];
-
-  const corrections = [
-    { wrong: /\bi\b/g, correct: "I", message: "Changed 'i' to 'I'" },
-    { wrong: /\bdont\b/gi, correct: "don't", message: "Corrected 'dont' to 'don't'" },
-    { wrong: /\bcant\b/gi, correct: "can't", message: "Corrected 'cant' to 'can't'" },
-    { wrong: /\bwont\b/gi, correct: "won't", message: "Corrected 'wont' to 'won't'" },
-    { wrong: /\bim\b/gi, correct: "I'm", message: "Corrected 'im' to 'I'm'" },
-    { wrong: /\bu\b/gi, correct: "you", message: "Replaced informal 'u' with 'you'" },
-    { wrong: /\bur\b/gi, correct: "your", message: "Replaced informal 'ur' with 'your'" },
-    { wrong: /\bteh\b/gi, correct: "the", message: "Corrected 'teh' to 'the'" },
-    { wrong: /\brecieve\b/gi, correct: "receive", message: "Corrected 'recieve' to 'receive'" },
-    { wrong: /\bseperate\b/gi, correct: "separate", message: "Corrected 'seperate' to 'separate'" }
-  ];
-
-  corrections.forEach((item) => {
-    if (item.wrong.test(correctedText)) {
-      correctedText = correctedText.replace(item.wrong, item.correct);
-      suggestions.push(item.message);
-    }
-  });
-
-  correctedText = correctedText.replace(/\s+/g, " ").trim();
-
-  if (correctedText.length > 0) {
-    correctedText = correctedText.charAt(0).toUpperCase() + correctedText.slice(1);
-  }
-
-  if (correctedText && !/[.?!]$/.test(correctedText)) {
-    correctedText += ".";
-    suggestions.push("Added ending punctuation.");
-  }
-
-  return {
-    correctedText,
-    suggestions
-  };
-}
-
 app.post("/summarize", (req, res) => {
   try {
     const text = (req.body.text || "").trim();
@@ -214,7 +174,7 @@ app.post("/summarize", (req, res) => {
   }
 });
 
-app.post("/grammar-check", (req, res) => {
+app.post("/grammar-check", async (req, res) => {
   try {
     const text = (req.body.text || "").trim();
 
@@ -224,11 +184,39 @@ app.post("/grammar-check", (req, res) => {
       });
     }
 
-    const result = basicGrammarCheck(text);
+    const response = await fetch("https://api.languagetool.org/v2/check", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: `text=${encodeURIComponent(text)}&language=en-US`
+    });
+
+    const data = await response.json();
+
+    const suggestions = [];
+    let correctedText = text;
+
+    if (data.matches && data.matches.length > 0) {
+      data.matches.forEach((match) => {
+        const replacement =
+          match.replacements &&
+          match.replacements.length > 0 &&
+          match.replacements[0].value
+            ? match.replacements[0].value
+            : null;
+
+        suggestions.push(
+          replacement
+            ? `${match.message} Suggested: ${replacement}`
+            : match.message
+        );
+      });
+    }
 
     return res.json({
-      correctedText: result.correctedText,
-      suggestions: result.suggestions
+      correctedText,
+      suggestions
     });
   } catch (err) {
     console.log("GRAMMAR CHECK ERROR:", err);
@@ -240,8 +228,6 @@ app.post("/grammar-check", (req, res) => {
 
 app.post("/upload", upload.single("file"), async (req, res) => {
   try {
-    console.log("UPLOAD HIT");
-
     if (!req.file) {
       return res.status(400).json({
         summary: "No file uploaded",
