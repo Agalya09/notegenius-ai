@@ -5,40 +5,19 @@ const multer = require("multer");
 const pdfParse = require("pdf-parse");
 const fs = require("fs");
 const path = require("path");
-const fetch = global.fetch;
 require("dotenv").config();
 
 const authRoutes = require("./routes/auth");
 const summaryRoutes = require("./routes/Summary");
 
 const app = express();
+const PORT = process.env.PORT || 5000;
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin) {
-      return callback(null, true);
-    }
-
-    const allowedOrigins = [
-      "https://notegenius-ai.netlify.app",
-      "http://localhost:5500",
-      "http://127.0.0.1:5500",
-      "http://localhost:3000"
-    ];
-
-    const isNetlifyPreview = origin.endsWith(".netlify.app");
-
-    if (allowedOrigins.includes(origin) || isNetlifyPreview) {
-      return callback(null, true);
-    }
-
-    return callback(new Error("Not allowed by CORS: " + origin));
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
-};
-
-app.use(cors(corsOptions));
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type"]
+}));
 app.use(express.json());
 
 mongoose.connect(process.env.MONGO_URI)
@@ -46,6 +25,7 @@ mongoose.connect(process.env.MONGO_URI)
   .catch((err) => console.log("MongoDB error:", err.message));
 
 const uploadsDir = path.join(__dirname, "uploads");
+
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
@@ -54,6 +34,8 @@ const upload = multer({ dest: uploadsDir });
 
 app.use("/api/auth", authRoutes);
 app.use("/api/summary", summaryRoutes);
+
+let latestDocumentText = "";
 
 const stopWords = new Set([
   "the", "is", "are", "a", "an", "and", "or", "of", "to", "in", "on", "for", "with",
@@ -64,7 +46,7 @@ const stopWords = new Set([
 ]);
 
 function splitSentences(text) {
-  return text
+  return (text || "")
     .replace(/\r/g, " ")
     .replace(/\n+/g, " ")
     .split(/(?<=[.?!])\s+/)
@@ -73,7 +55,7 @@ function splitSentences(text) {
 }
 
 function getWordFrequency(text) {
-  const words = text
+  const words = (text || "")
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, " ")
     .split(/\s+/)
@@ -141,12 +123,10 @@ function generateSummaryAndPoints(text, length = "medium") {
     .sort((a, b) => a.index - b.index)
     .map((item) => item.sentence.replace(/[.?!]+$/, "").trim());
 
-  const summary = summarySentences.length
-    ? summarySentences.join(" ")
-    : sentences.slice(0, 2).join(" ");
-
   return {
-    summary,
+    summary: summarySentences.length
+      ? summarySentences.join(" ")
+      : sentences.slice(0, 2).join(" "),
     points: [...new Set(keyPoints)]
   };
 }
@@ -163,7 +143,9 @@ app.post("/summarize", (req, res) => {
       });
     }
 
+    latestDocumentText = text;
     const result = generateSummaryAndPoints(text, length);
+
     return res.json(result);
   } catch (err) {
     console.log("SUMMARIZE ERROR:", err);
@@ -174,44 +156,57 @@ app.post("/summarize", (req, res) => {
   }
 });
 
-app.post("/grammar-check", async (req, res) => {
+app.post("/grammar-check", (req, res) => {
   try {
     const text = (req.body.text || "").trim();
 
     if (!text) {
       return res.status(400).json({
-        message: "No text provided"
+        correctedText: "",
+        suggestions: ["No text provided"]
       });
     }
 
-    const response = await fetch("https://api.languagetool.org/v2/check", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded"
-      },
-      body: `text=${encodeURIComponent(text)}&language=en-US`
+    let correctedText = text;
+    const suggestions = [];
+
+    if (correctedText.length > 0) {
+      const firstChar = correctedText.charAt(0);
+      if (firstChar === firstChar.toLowerCase()) {
+        correctedText = firstChar.toUpperCase() + correctedText.slice(1);
+        suggestions.push("First letter should be capitalized.");
+      }
+    }
+
+    if (/\s{2,}/.test(correctedText)) {
+      correctedText = correctedText.replace(/\s{2,}/g, " ");
+      suggestions.push("Removed extra spaces.");
+    }
+
+    const replacements = [
+      { wrong: /\bi\b/g, right: "I", message: 'Changed "i" to "I".' },
+      { wrong: /\bim\b/gi, right: "I am", message: 'Changed "im" to "I am".' },
+      { wrong: /\bdont\b/gi, right: "don't", message: 'Changed "dont" to "don\'t".' },
+      { wrong: /\bcant\b/gi, right: "can't", message: 'Changed "cant" to "can\'t".' },
+      { wrong: /\bwont\b/gi, right: "won't", message: 'Changed "wont" to "won\'t".' },
+      { wrong: /\bdoesnt\b/gi, right: "doesn't", message: 'Changed "doesnt" to "doesn\'t".' },
+      { wrong: /\bidk\b/gi, right: "I don't know", message: 'Expanded "idk".' }
+    ];
+
+    replacements.forEach((item) => {
+      if (item.wrong.test(correctedText)) {
+        correctedText = correctedText.replace(item.wrong, item.right);
+        suggestions.push(item.message);
+      }
     });
 
-    const data = await response.json();
+    if (correctedText.length > 0 && !/[.!?]$/.test(correctedText)) {
+      correctedText += ".";
+      suggestions.push("Added ending punctuation.");
+    }
 
-    const suggestions = [];
-    let correctedText = text;
-
-    if (data.matches && data.matches.length > 0) {
-      data.matches.forEach((match) => {
-        const replacement =
-          match.replacements &&
-          match.replacements.length > 0 &&
-          match.replacements[0].value
-            ? match.replacements[0].value
-            : null;
-
-        suggestions.push(
-          replacement
-            ? `${match.message} Suggested: ${replacement}`
-            : match.message
-        );
-      });
+    if (suggestions.length === 0) {
+      suggestions.push("No major grammar suggestions found.");
     }
 
     return res.json({
@@ -219,26 +214,87 @@ app.post("/grammar-check", async (req, res) => {
       suggestions
     });
   } catch (err) {
-    console.log("GRAMMAR CHECK ERROR:", err);
+    console.log("GRAMMAR ERROR:", err);
     return res.status(500).json({
-      message: "Grammar check failed"
+      correctedText: "",
+      suggestions: ["Grammar check failed"]
+    });
+  }
+});
+
+app.post("/translate", async (req, res) => {
+  try {
+    const text = (req.body.text || "").trim();
+    const target = (req.body.target || req.body.lang || "ta").trim();
+
+    if (!text) {
+      return res.status(400).json({
+        translatedText: "",
+        output: "",
+        message: "No text provided"
+      });
+    }
+
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|${encodeURIComponent(target)}`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    const translatedText =
+      data &&
+      data.responseData &&
+      data.responseData.translatedText
+        ? data.responseData.translatedText
+        : "Translation unavailable";
+
+    return res.json({
+      translatedText,
+      output: translatedText
+    });
+  } catch (err) {
+    console.log("TRANSLATE ERROR:", err);
+    return res.status(500).json({
+      translatedText: "",
+      output: "",
+      message: "Translation failed"
     });
   }
 });
 
 app.post("/upload", upload.single("file"), async (req, res) => {
   try {
+    console.log("UPLOAD HIT");
+
     if (!req.file) {
+      console.log("No file uploaded");
       return res.status(400).json({
         summary: "No file uploaded",
         points: []
       });
     }
 
+    console.log("File name:", req.file.originalname);
+    console.log("File path:", req.file.path);
+
     const filePath = req.file.path;
     const buffer = fs.readFileSync(filePath);
-    const pdfData = await pdfParse(buffer);
+
+    let pdfData;
+    try {
+      pdfData = await pdfParse(buffer);
+    } catch (pdfErr) {
+      console.log("PDF PARSE ERROR:", pdfErr);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+      return res.status(500).json({
+        summary: "Unable to read this PDF.",
+        points: []
+      });
+    }
+
     const text = (pdfData.text || "").trim();
+    console.log("Extracted text length:", text.length);
 
     if (fs.existsSync(filePath)) {
       fs.unlinkSync(filePath);
@@ -246,13 +302,19 @@ app.post("/upload", upload.single("file"), async (req, res) => {
 
     if (!text) {
       return res.status(400).json({
-        summary: "No readable text found in PDF. Use a text-based PDF.",
+        summary: "No readable text found in PDF.",
         points: []
       });
     }
 
+    latestDocumentText = text;
+
     const result = generateSummaryAndPoints(text, "medium");
-    return res.json(result);
+
+    return res.json({
+      summary: result.summary,
+      points: result.points
+    });
   } catch (err) {
     console.log("UPLOAD ERROR:", err);
     return res.status(500).json({
@@ -262,15 +324,71 @@ app.post("/upload", upload.single("file"), async (req, res) => {
   }
 });
 
+app.post("/ask-doc", (req, res) => {
+  try {
+    const question = (req.body.question || "").trim();
+
+    if (!question) {
+      return res.status(400).json({
+        answer: "",
+        message: "No question provided"
+      });
+    }
+
+    if (!latestDocumentText) {
+      return res.status(400).json({
+        answer: "",
+        message: "No document available. First summarize text or upload a PDF."
+      });
+    }
+
+    const questionWords = question
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter((w) => w && !stopWords.has(w));
+
+    const sentences = splitSentences(latestDocumentText);
+
+    let bestSentence = "";
+    let bestScore = -1;
+
+    for (const sentence of sentences) {
+      const cleanSentence = sentence.toLowerCase();
+      let score = 0;
+
+      for (const word of questionWords) {
+        if (cleanSentence.includes(word)) {
+          score += 1;
+        }
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestSentence = sentence;
+      }
+    }
+
+    return res.json({
+      answer: bestSentence || "I could not find a clear answer in the current document."
+    });
+  } catch (err) {
+    console.log("ASK DOC ERROR:", err);
+    return res.status(500).json({
+      answer: "",
+      message: "Chatbot failed"
+    });
+  }
+});
+
 app.get("/test", (req, res) => {
-  res.send("Backend working 🚀");
+  res.send("Backend working");
 });
 
 app.get("/", (req, res) => {
   res.send("NoteGenius backend is live");
 });
 
-const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
