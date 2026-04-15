@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NoteGenius AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .tool-btn {
+      width: 76px;
+      min-height: 86px;
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 8px;
+      transition: 0.2s ease;
+    }
+    .soft-card {
+      border-radius: 30px;
+    }
+  </style>
+</head>
+<body id="pageBody" class="min-h-screen bg-[#f6f3ec] text-slate-900">
+
+  <div class="min-h-screen flex">
+
+    <!-- Left Tool Navigation -->
+    <aside id="leftNav" class="hidden lg:flex w-24 bg-[#f2efe8] border-r border-slate-200 flex-col items-center py-6">
+      <div class="w-14 h-14 rounded-2xl bg-slate-900 text-white flex items-center justify-center text-lg font-bold mb-6">
+        N
+      </div>
+
+      <button type="button" onclick="resetWorkspace()" class="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-800 flex flex-col items-center justify-center text-xs font-medium hover:bg-emerald-200 transition">
+        <span class="text-2xl">＋</span>
+        <span>New</span>
+      </button>
+
+      <div class="mt-6 flex flex-col gap-3">
+        <button type="button" id="navSummary" onclick="switchFeature('summary')" class="tool-btn">
+          <span class="text-xl">📝</span>
+          <span>Summary</span>
+        </button>
+
+        <button type="button" id="navGrammar" onclick="switchFeature('grammar')" class="tool-btn">
+          <span class="text-xl">✍️</span>
+          <span>Grammar</span>
+        </button>
+
+        <button type="button" id="navTranslate" onclick="switchFeature('translate')" class="tool-btn">
+          <span class="text-xl">🌐</span>
+          <span>Translate</span>
+        </button>
+
+        <button type="button" id="navPdf" onclick="switchFeature('pdf')" class="tool-btn">
+          <span class="text-xl">📄</span>
+          <span>PDF</span>
+        </button>
+
+        <button type="button" id="navChatbot" onclick="switchFeature('chatbot')" class="tool-btn">
+          <span class="text-xl">💬</span>
+          <span>Chatbot</span>
+        </button>
+
+        <a href="history.html" class="tool-btn text-slate-600 hover:bg-white">
+          <span class="text-xl">🕘</span>
+          <span>History</span>
+        </a>
+      </div>
+
+      <div class="mt-auto flex flex-col gap-3 items-center">
+        <button
+          type="button"
+          id="themeBtn"
+          onclick="toggleTheme()"
+          class="w-12 h-12 rounded-2xl border border-slate-300 bg-white hover:bg-slate-100 transition text-xl"
+          title="Toggle theme"
+        >
+          🌙
+        </button>
+
+        <button type="button" onclick="logout()" class="w-16 h-16 rounded-2xl text-red-500 flex flex-col items-center justify-center text-xs font-medium hover:bg-red-50 transition">
+          <span class="text-xl">⎋</span>
+          <span>Exit</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 px-4 py-6 md:px-8 md:py-8">
+      <div class="max-w-7xl mx-auto">
+
+        <!-- Header -->
+        <section class="text-center mb-8">
+          <p class="text-sm font-semibold text-slate-500 mb-3">Workspace</p>
+          <h1 id="heroTitle" class="text-4xl md:text-6xl font-bold tracking-tight text-slate-900">
+            Free AI Summarizer
+          </h1>
+          <p id="heroDesc" class="max-w-4xl mx-auto mt-4 text-lg md:text-xl text-slate-600 leading-8">
+            Condense articles, reports, and documents into key points quickly while keeping the original meaning clear.
+          </p>
+        </section>
+
+        <!-- Main Grid -->
+        <div class="grid xl:grid-cols-[1.12fr_0.88fr] gap-6">
+
+          <!-- Left Workspace -->
+          <div class="space-y-6">
+
+            <div id="workspaceCard" class="soft-card bg-white border border-slate-200 shadow-sm p-5 md:p-6">
+
+              <!-- Summary Panel -->
+              <section id="summaryPanel">
+                <div class="grid md:grid-cols-3 gap-4 mb-5">
+                  <select
+                    id="summaryLanguage"
+                    class="w-full rounded-2xl border border-slate-300 px-4 py-3 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  >
+                    <option value="auto">Language (Auto)</option>
+                    <option value="en">English</option>
+                  </select>
+
+                  <select
+                    id="summaryLength"
+                    class="w-full rounded-2xl border border-slate-300 px-4 py-3 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  >
+                    <option value="short">Short</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="long">Long</option>
+                  </select>
+
+                  <div class="flex rounded-2xl border border-slate-300 overflow-hidden">
+                    <button type="button" id="modeParagraph" onclick="setSummaryMode('paragraph')" class="flex-1 px-4 py-3 bg-slate-900 text-white font-medium">
+                      Paragraph
+                    </button>
+                    <button type="button" id="modeBullets" onclick="setSummaryMode('bullets')" class="flex-1 px-4 py-3 bg-white text-slate-700 font-medium">
+                      Bullet Points
+                    </button>
+                  </div>
+                </div>
+
+                <div class="rounded-[28px] border-2 border-slate-800 bg-white p-5 min-h-[420px] flex flex-col">
+                  <textarea
+                    id="text"
+                    rows="12"
+                    placeholder='Enter or paste your text and press "Summarize"'
+                    class="w-full flex-1 resize-none border-0 outline-none text-lg bg-transparent text-slate-900 placeholder:text-slate-400"
+                  ></textarea>
+
+                  <div class="flex flex-wrap gap-3 mt-4">
+                    <button type="button" onclick="pasteText()" class="rounded-full border border-slate-300 px-5 py-2.5 text-slate-700 hover:bg-slate-50 transition">
+                      Paste
+                    </button>
+                    <button type="button" onclick="startListening()" class="rounded-full border border-slate-300 px-5 py-2.5 text-slate-700 hover:bg-slate-50 transition">
+                      Speak
+                    </button>
+                    <button type="button" onclick="stopListening()" class="rounded-full border border-slate-300 px-5 py-2.5 text-slate-700 hover:bg-slate-50 transition">
+                      Stop
+                    </button>
+                    <button type="button" onclick="summarizeText()" class="ml-auto rounded-full bg-emerald-600 text-white px-6 py-3 font-semibold hover:bg-emerald-700 transition">
+                      Summarize
+                    </button>
+                  </div>
+
+                  <p id="voiceStatus" class="text-sm text-slate-500 mt-4">Voice input is off</p>
+                </div>
+              </section>
+
+              <!-- Grammar Panel -->
+              <section id="grammarPanel" class="hidden">
+                <div class="mb-5">
+                  <h3 class="text-2xl font-semibold mb-2">Grammar Checker</h3>
+                  <p class="text-slate-500">Review your sentence structure and get grammar suggestions.</p>
+                </div>
+
+                <div class="rounded-[28px] border border-slate-300 bg-white p-5 min-h-[420px] flex flex-col">
+                  <textarea
+                    id="grammarText"
+                    rows="12"
+                    placeholder="Paste your text here for grammar review..."
+                    class="w-full flex-1 resize-none border-0 outline-none text-lg bg-transparent text-slate-900 placeholder:text-slate-400"
+                  ></textarea>
+
+                  <div class="flex flex-wrap gap-3 mt-4">
+                    <button type="button" onclick="checkGrammar()" class="rounded-full bg-slate-900 text-white px-6 py-3 font-semibold hover:bg-slate-800 transition">
+                      Check Grammar
+                    </button>
+                    <button type="button" onclick="copyOutput()" class="rounded-full bg-slate-200 text-slate-800 px-6 py-3 font-medium hover:bg-slate-300 transition">
+                      Copy Result
+                    </button>
+                    <button type="button" onclick="saveSummary()" class="rounded-full bg-emerald-600 text-white px-6 py-3 font-medium hover:bg-emerald-700 transition">
+                      Save Result
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Translate Panel -->
+              <section id="translatePanel" class="hidden">
+                <div class="mb-5">
+                  <h3 class="text-2xl font-semibold mb-2">Translation Tool</h3>
+                  <p class="text-slate-500">Translate your own text or the summary you generated.</p>
+                </div>
+
+                <div class="grid md:grid-cols-[1fr_220px] gap-4 mb-4">
+                  <textarea
+                    id="translateText"
+                    rows="6"
+                    placeholder="Paste text to translate..."
+                    class="w-full rounded-[28px] border border-slate-300 p-5 resize-none bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  ></textarea>
+
+                  <div class="space-y-3">
+                    <select
+                      id="translateTarget"
+                      class="w-full rounded-2xl border border-slate-300 px-4 py-3 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                    >
+                      <option value="ta">Tamil</option>
+                      <option value="hi">Hindi</option>
+                      <option value="ml">Malayalam</option>
+                    </select>
+
+                    <button type="button" onclick="translateTextContent()" class="w-full rounded-2xl bg-purple-600 text-white px-5 py-3 font-semibold hover:bg-purple-700 transition">
+                      Translate Text
+                    </button>
+
+                    <button type="button" onclick="translateCurrentSummary()" class="w-full rounded-2xl bg-indigo-600 text-white px-5 py-3 font-semibold hover:bg-indigo-700 transition">
+                      Translate Summary
+                    </button>
+                  </div>
+                </div>
+              </section>
+
+              <!-- PDF Panel -->
+              <section id="pdfPanel" class="hidden">
+                <div class="mb-5">
+                  <h3 class="text-2xl font-semibold mb-2">PDF Workspace</h3>
+                  <p class="text-slate-500">Upload a PDF, preview it, summarize it, and ask questions from it.</p>
+                </div>
+
+                <div class="grid xl:grid-cols-[0.92fr_1.08fr] gap-5">
+                  <div class="space-y-4">
+                    <input
+                      type="file"
+                      id="pdfFile"
+                      accept=".pdf,application/pdf"
+                      class="w-full rounded-2xl border border-slate-300 px-4 py-3 bg-white text-slate-900"
+                    />
+
+                    <button type="button" onclick="return uploadPDF(event)" class="rounded-2xl bg-blue-600 text-white px-6 py-3 font-semibold hover:bg-blue-700 transition">
+                      Upload PDF
+                    </button>
+
+                    <div class="rounded-[28px] border border-slate-200 bg-slate-50 p-4">
+                      <h4 class="font-semibold mb-3">Ask from Document</h4>
+                      <input
+                        id="question"
+                        placeholder="Ask something from the uploaded PDF..."
+                        class="w-full rounded-2xl border border-slate-300 px-4 py-3 bg-white text-slate-900"
+                      />
+                      <button type="button" onclick="askDoc()" class="mt-3 rounded-2xl bg-slate-900 text-white px-5 py-3 hover:bg-slate-800 transition">
+                        Ask Question
+                      </button>
+                      <p id="chatAnswer" class="text-sm text-slate-600 mt-4 leading-7"></p>
+                    </div>
+                  </div>
+
+                  <div>
+                   <div id="pdfPreviewCard" class="hidden rounded-[28px] overflow-hidden border border-slate-200 bg-slate-50 h-[620px]">
+                    <embed id="pdfPreviewFrame" type="application/pdf" class="w-full h-full" />
+                  </div>
+
+                    <div id="pdfPreviewPlaceholder" class="rounded-[28px] border border-dashed border-slate-300 bg-slate-50 h-[620px] flex items-center justify-center text-slate-400 text-sm">
+                      PDF preview will appear here
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Chatbot Panel -->
+              <section id="chatbotPanel" class="hidden">
+                <div class="mb-5">
+                  <h3 class="text-2xl font-semibold mb-2">Document Chatbot</h3>
+                  <p class="text-slate-500">Ask questions from your current text or uploaded PDF.</p>
+                </div>
+
+                <div class="rounded-[28px] border border-slate-300 bg-white p-5">
+                  <label class="block text-sm font-medium text-slate-700 mb-2">Ask a Question</label>
+                  <input
+                    id="chatbotQuestion"
+                    placeholder="For example: What is the main idea of this document?"
+                    class="w-full rounded-2xl border border-slate-300 px-4 py-3 bg-white text-slate-900"
+                  />
+
+                  <div class="flex flex-wrap gap-3 mt-4">
+                    <button
+                      type="button"
+                      onclick="askDocFromChatbot()"
+                      class="rounded-2xl bg-slate-900 text-white px-6 py-3 font-semibold hover:bg-slate-800 transition"
+                    >
+                      Ask
+                    </button>
+
+                    <button
+                      type="button"
+                      onclick="clearChatbotAnswer()"
+                      class="rounded-2xl bg-slate-200 text-slate-800 px-6 py-3 font-medium hover:bg-slate-300 transition"
+                    >
+                      Clear
+                    </button>
+                  </div>
+
+                  <div class="mt-5 rounded-[24px] border border-slate-200 bg-slate-50 p-5 min-h-[180px]">
+                    <p id="chatbotAnswer" class="text-slate-600 leading-7">
+                      Your answer will appear here.
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+            </div>
+          </div>
+
+          <!-- Right Result Panel -->
+          <div>
+            <div id="outputCard" class="bg-white rounded-[30px] border border-slate-200 shadow-sm p-6 sticky top-6">
+              <div class="flex items-center justify-between gap-3 mb-5">
+                <div>
+                  <h3 id="outputTitle" class="text-2xl font-semibold">Result</h3>
+                  <p id="outputSubTitle" class="text-sm text-slate-500 mt-1">
+                    Processed output will appear here.
+                  </p>
+                </div>
+
+                <span id="resultTag" class="text-xs px-3 py-1 rounded-full bg-slate-100 text-slate-700">
+                  Ready
+                </span>
+              </div>
+
+              <div id="output" class="text-slate-800 leading-7">
+                <div class="rounded-[28px] border border-dashed border-slate-200 p-8 text-center text-slate-400">
+                  No result yet. Choose a tool and start processing.
+                </div>
+              </div>
+
+              <div class="flex flex-wrap gap-3 mt-5">
+                <button type="button" onclick="copyOutput()" class="rounded-full bg-slate-200 text-slate-800 px-5 py-3 font-medium hover:bg-slate-300 transition">
+                  Copy Result
+                </button>
+                <button type="button" onclick="saveSummary()" class="rounded-full bg-emerald-600 text-white px-5 py-3 font-medium hover:bg-emerald-700 transition">
+                  Save Result
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const BASE_URL = "https://notegenius-ai-t75e.onrender.com";
+
+    let recognition;
+    let isListening = false;
+    let currentTheme = localStorage.getItem("theme") || "light";
+    let currentFeature = "summary";
+    let currentData = null;
+    let summaryMode = "paragraph";
+
+    if (!localStorage.getItem("user")) {
+      window.location.href = "login.html";
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.innerText = text || "";
+      return div.innerHTML;
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = "login.html";
+    }
+
+    function pasteText() {
+      navigator.clipboard.readText()
+        .then(text => {
+          document.getElementById("text").value = text;
+        })
+        .catch(() => {
+          alert("Paste failed.");
+        });
+    }
+
+    function setSummaryMode(mode) {
+      summaryMode = mode;
+
+      const paragraphBtn = document.getElementById("modeParagraph");
+      const bulletsBtn = document.getElementById("modeBullets");
+
+      if (mode === "paragraph") {
+        paragraphBtn.className = "flex-1 px-4 py-3 bg-slate-900 text-white font-medium";
+        bulletsBtn.className = "flex-1 px-4 py-3 bg-white text-slate-700 font-medium";
+      } else {
+        bulletsBtn.className = "flex-1 px-4 py-3 bg-slate-900 text-white font-medium";
+        paragraphBtn.className = "flex-1 px-4 py-3 bg-white text-slate-700 font-medium";
+      }
+    }
+
+    function setActiveFeature() {
+      const ids = ["navSummary", "navGrammar", "navTranslate", "navPdf", "navChatbot"];
+
+      ids.forEach(id => {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        btn.className = currentTheme === "dark"
+          ? "tool-btn text-slate-300 hover:bg-slate-800"
+          : "tool-btn text-slate-600 hover:bg-white";
+      });
+
+      const activeMap = {
+        summary: "navSummary",
+        grammar: "navGrammar",
+        translate: "navTranslate",
+        pdf: "navPdf",
+        chatbot: "navChatbot"
+      };
+
+      const activeBtn = document.getElementById(activeMap[currentFeature]);
+      if (!activeBtn) return;
+
+      activeBtn.className = currentTheme === "dark"
+        ? "tool-btn bg-white text-slate-900"
+        : "tool-btn bg-slate-900 text-white";
+    }
+
+    function switchFeature(feature) {
+      sessionStorage.setItem("activeFeature", feature);
+      currentFeature = feature;
+      setActiveFeature();
+
+      const summaryPanel = document.getElementById("summaryPanel");
+      const grammarPanel = document.getElementById("grammarPanel");
+      const translatePanel = document.getElementById("translatePanel");
+      const pdfPanel = document.getElementById("pdfPanel");
+      const chatbotPanel = document.getElementById("chatbotPanel");
+
+      if (summaryPanel) summaryPanel.classList.add("hidden");
+      if (grammarPanel) grammarPanel.classList.add("hidden");
+      if (translatePanel) translatePanel.classList.add("hidden");
+      if (pdfPanel) pdfPanel.classList.add("hidden");
+      if (chatbotPanel) chatbotPanel.classList.add("hidden");
+
+      if (feature === "summary" && summaryPanel) summaryPanel.classList.remove("hidden");
+      if (feature === "grammar" && grammarPanel) grammarPanel.classList.remove("hidden");
+      if (feature === "translate" && translatePanel) translatePanel.classList.remove("hidden");
+      if (feature === "pdf" && pdfPanel) pdfPanel.classList.remove("hidden");
+      if (feature === "chatbot" && chatbotPanel) chatbotPanel.classList.remove("hidden");
+
+      const heroTitle = document.getElementById("heroTitle");
+      const heroDesc = document.getElementById("heroDesc");
+
+      if (!heroTitle || !heroDesc) return;
+
+      if (feature === "summary") {
+        heroTitle.innerText = "Free AI Summarizer";
+        heroDesc.innerText = "Condense articles, reports, and documents into key points quickly while keeping the original meaning clear.";
+      } else if (feature === "grammar") {
+        heroTitle.innerText = "Grammar Review Tool";
+        heroDesc.innerText = "Review your text, improve readability, and get simple grammar suggestions instantly.";
+      } else if (feature === "translate") {
+        heroTitle.innerText = "Smart Translation Tool";
+        heroDesc.innerText = "Translate your text or generated summaries into other languages with one click.";
+      } else if (feature === "pdf") {
+        heroTitle.innerText = "PDF Summary Workspace";
+        heroDesc.innerText = "Upload PDFs, preview them, generate summaries, and ask questions from your document.";
+      } else {
+        heroTitle.innerText = "Document Chatbot";
+        heroDesc.innerText = "Ask questions from your current text or uploaded PDF and get quick answers.";
+      }
+    }
+
+    function resetWorkspace() {
+      document.getElementById("text").value = "";
+      document.getElementById("grammarText").value = "";
+      document.getElementById("translateText").value = "";
+      document.getElementById("pdfFile").value = "";
+      document.getElementById("question").value = "";
+      document.getElementById("chatAnswer").innerText = "";
+      document.getElementById("chatbotQuestion").value = "";
+      document.getElementById("chatbotAnswer").innerText = "Your answer will appear here.";
+      document.getElementById("voiceStatus").innerText = "Voice input is off";
+      document.getElementById("output").innerHTML = `
+        <div class="rounded-[28px] border border-dashed border-slate-200 p-8 text-center text-slate-400">
+          No result yet. Choose a tool and start processing.
+        </div>
+      `;
+      document.getElementById("resultTag").innerText = "Ready";
+      document.getElementById("outputTitle").innerText = "Result";
+      document.getElementById("outputSubTitle").innerText = "Processed output will appear here.";
+      document.getElementById("pdfPreviewFrame").src = "";
+      document.getElementById("pdfPreviewCard").classList.add("hidden");
+      document.getElementById("pdfPreviewPlaceholder").classList.remove("hidden");
+      currentData = null;
+      switchFeature("summary");
+    }
+
+    function renderSummary(data, label = "Summary") {
+      document.getElementById("outputTitle").innerText = label === "PDF Summary" ? "PDF Summary Result" : "Summary Result";
+      document.getElementById("outputSubTitle").innerText = "Generated summary and key points are shown below.";
+      document.getElementById("resultTag").innerText = label;
+
+      let html = "";
+
+      if (summaryMode === "paragraph") {
+        html += `
+          <div class="mb-6">
+            <h4 class="text-lg font-semibold mb-2">Summary</h4>
+            <p>${escapeHtml(data.summary || "No summary available")}</p>
+          </div>
+        `;
+      } else {
+        html += `
+          <div class="mb-6">
+            <h4 class="text-lg font-semibold mb-2">Summary Points</h4>
+            <ul class="list-disc pl-5 space-y-2">
+              ${(data.points || []).map(point => `<li>${escapeHtml(point)}</li>`).join("")}
+            </ul>
+          </div>
+        `;
+      }
+
+      if (data.points && data.points.length > 0 && summaryMode === "paragraph") {
+        html += `
+          <div>
+            <h4 class="text-lg font-semibold mb-2">Key Points</h4>
+            <ul class="list-disc pl-5 space-y-2">
+              ${data.points.map(point => `<li>${escapeHtml(point)}</li>`).join("")}
+            </ul>
+          </div>
+        `;
+      }
+
+      document.getElementById("output").innerHTML = html;
+
+      currentData = {
+        type: label.toLowerCase(),
+        summary: data.summary || "",
+        points: data.points || []
+      };
+    }
+
+    function renderGrammar(data) {
+      document.getElementById("outputTitle").innerText = "Grammar Result";
+      document.getElementById("outputSubTitle").innerText = "Corrected text and suggestions are shown below.";
+      document.getElementById("resultTag").innerText = "Grammar";
+
+      const suggestions = data.suggestions || [];
+
+      let html = `
+        <div class="mb-6">
+          <h4 class="text-lg font-semibold mb-2">Corrected Text</h4>
+          <p>${escapeHtml(data.correctedText || "")}</p>
+        </div>
+      `;
+
+      html += `
+        <div>
+          <h4 class="text-lg font-semibold mb-2">Suggestions</h4>
+          ${
+            suggestions.length > 0
+              ? `<ul class="list-disc pl-5 space-y-2">${suggestions.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+              : `<p>No grammar suggestions found.</p>`
+          }
+        </div>
+      `;
+
+      document.getElementById("output").innerHTML = html;
+
+      currentData = {
+        type: "grammar",
+        summary: data.correctedText || "",
+        points: suggestions
+      };
+    }
+
+    function renderTranslation(data, label) {
+      document.getElementById("outputTitle").innerText = "Translation Result";
+      document.getElementById("outputSubTitle").innerText = "Translated output is shown below.";
+      document.getElementById("resultTag").innerText = "Translate";
+
+      document.getElementById("output").innerHTML = `
+        <div>
+          <h4 class="text-lg font-semibold mb-2">${escapeHtml(label)} Translation</h4>
+          <p>${escapeHtml(data.translatedText || data.output || "Translation unavailable")}</p>
+        </div>
+      `;
+
+      currentData = {
+        type: "translate",
+        summary: data.translatedText || data.output || "",
+        points: []
+      };
+    }
+
+    async function summarizeText() {
+      const text = document.getElementById("text").value.trim();
+      const length = document.getElementById("summaryLength").value;
+
+      if (!text) {
+        alert("Enter text first.");
+        return;
+      }
+
+      document.getElementById("resultTag").innerText = "Processing";
+      document.getElementById("outputTitle").innerText = "Summary Result";
+      document.getElementById("outputSubTitle").innerText = "Generating summary from your input.";
+      document.getElementById("output").innerHTML = "<p class='text-slate-500'>Generating summary...</p>";
+
+      try {
+        const res = await fetch(`${BASE_URL}/summarize`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, length })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          document.getElementById("output").innerHTML = `<p class="text-red-500">${escapeHtml(data.summary || data.message || "Unable to generate summary.")}</p>`;
+          return;
+        }
+
+        renderSummary(data, "Summary");
+        document.getElementById("translateText").value = data.summary || "";
+      } catch (err) {
+        console.log("Summarize error:", err);
+        document.getElementById("output").innerHTML = "<p class='text-red-500'>Unable to generate summary.</p>";
+      }
+    }
+
+    async function checkGrammar() {
+      const text = document.getElementById("grammarText").value.trim();
+
+      if (!text) {
+        alert("Enter text first.");
+        return;
+      }
+
+      document.getElementById("resultTag").innerText = "Processing";
+      document.getElementById("outputTitle").innerText = "Grammar Result";
+      document.getElementById("outputSubTitle").innerText = "Checking grammar suggestions.";
+      document.getElementById("output").innerHTML = "<p class='text-slate-500'>Checking grammar...</p>";
+
+      try {
+        const res = await fetch(`${BASE_URL}/grammar-check`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          document.getElementById("output").innerHTML = `<p class="text-red-500">${escapeHtml(data.message || "Unable to check grammar.")}</p>`;
+          return;
+        }
+
+        renderGrammar(data);
+      } catch (err) {
+        console.log("Grammar error:", err);
+        document.getElementById("output").innerHTML = "<p class='text-red-500'>Unable to check grammar.</p>";
+      }
+    }
+
+    async function translateTextContent() {
+      const text = document.getElementById("translateText").value.trim();
+      const target = document.getElementById("translateTarget").value;
+      const label = document.getElementById("translateTarget").selectedOptions[0].text;
+
+      if (!text) {
+        alert("Enter text to translate.");
+        return;
+      }
+
+      document.getElementById("resultTag").innerText = "Processing";
+      document.getElementById("outputTitle").innerText = "Translation Result";
+      document.getElementById("outputSubTitle").innerText = "Translating your text.";
+      document.getElementById("output").innerHTML = "<p class='text-slate-500'>Translating text...</p>";
+
+      try {
+        const res = await fetch(`${BASE_URL}/translate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, target })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          document.getElementById("output").innerHTML = `<p class="text-red-500">${escapeHtml(data.message || "Translation failed.")}</p>`;
+          return;
+        }
+
+        renderTranslation(data, label);
+      } catch (err) {
+        console.log("Translate error:", err);
+        document.getElementById("output").innerHTML = "<p class='text-red-500'>Translation failed.</p>";
+      }
+    }
+
+    async function translateCurrentSummary() {
+      if (!currentData || !currentData.summary) {
+        alert("No current summary available to translate.");
+        return;
+      }
+
+      document.getElementById("translateText").value = currentData.summary;
+      switchFeature("translate");
+      await translateTextContent();
+    }
+
+   async function uploadPDF(event) {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  const fileInput = document.getElementById("pdfFile");
+  const file = fileInput ? fileInput.files[0] : null;
+
+  if (!file) {
+    alert("Choose a PDF file.");
+    return false;
+  }
+
+  try {
+    const fileUrl = URL.createObjectURL(file);
+
+    const previewFrame = document.getElementById("pdfPreviewFrame");
+    const previewCard = document.getElementById("pdfPreviewCard");
+    const previewPlaceholder = document.getElementById("pdfPreviewPlaceholder");
+
+    if (previewFrame) previewFrame.src = fileUrl;
+    if (previewCard) previewCard.classList.remove("hidden");
+    if (previewPlaceholder) previewPlaceholder.classList.add("hidden");
+  } catch (err) {
+    console.log("Preview error:", err);
+  }
+
+  document.getElementById("resultTag").innerText = "Processing";
+  document.getElementById("outputTitle").innerText = "PDF Summary Result";
+  document.getElementById("outputSubTitle").innerText = "Extracting text and generating summary from the uploaded PDF.";
+  document.getElementById("output").innerHTML = "<p class='text-slate-500'>Processing PDF...</p>";
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const res = await fetch("http://localhost:5000/upload", {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await res.json();
+    console.log("PDF RESPONSE:", data);
+
+    if (!res.ok) {
+      document.getElementById("output").innerHTML =
+        `<p class="text-red-500">${data.summary || data.message || "PDF upload failed."}</p>`;
+      return false;
+    }
+
+    document.getElementById("resultTag").innerText = "PDF Summary";
+    document.getElementById("outputTitle").innerText = "PDF Summary Result";
+    document.getElementById("outputSubTitle").innerText = "Generated summary and key points are shown below.";
+
+    let html = `
+      <div class="mb-6">
+        <h4 class="text-lg font-semibold mb-2">Summary</h4>
+        <p>${escapeHtml(data.summary || "No summary available")}</p>
+      </div>
+    `;
+
+    if (data.points && data.points.length > 0) {
+      html += `
+        <div>
+          <h4 class="text-lg font-semibold mb-2">Key Points</h4>
+          <ul class="list-disc pl-5 space-y-2">
+            ${data.points.map(point => `<li>${escapeHtml(point)}</li>`).join("")}
+          </ul>
+        </div>
+      `;
+    }
+
+    document.getElementById("output").innerHTML = html;
+
+    currentData = {
+      type: "pdf",
+      summary: data.summary || "",
+      points: data.points || []
+    };
+
+    document.getElementById("translateText").value = data.summary || "";
+    switchFeature("pdf");
+    return false;
+  } catch (err) {
+    console.log("PDF upload fetch error:", err);
+    document.getElementById("output").innerHTML =
+      "<p class='text-red-500'>PDF upload failed.</p>";
+    return false;
+  }
+}
+    async function askDoc() {
+      const question = document.getElementById("question").value.trim();
+
+      if (!question) {
+        alert("Enter a question.");
+        return;
+      }
+
+      document.getElementById("chatAnswer").innerText = "Checking document...";
+
+      try {
+        const res = await fetch(`${BASE_URL}/ask-doc`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question })
+        });
+
+        const data = await res.json();
+        document.getElementById("chatAnswer").innerText = data.answer || data.message || "No answer available.";
+      } catch (err) {
+        console.log("Ask doc error:", err);
+        document.getElementById("chatAnswer").innerText = "Unable to answer right now.";
+      }
+    }
+
+    async function askDocFromChatbot() {
+      const question = document.getElementById("chatbotQuestion").value.trim();
+
+      if (!question) {
+        alert("Enter a question.");
+        return;
+      }
+
+      document.getElementById("chatbotAnswer").innerText = "Checking document...";
+
+      try {
+        const res = await fetch(`${BASE_URL}/ask-doc`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question })
+        });
+
+        const data = await res.json();
+        document.getElementById("chatbotAnswer").innerText = data.answer || data.message || "No answer available.";
+      } catch (err) {
+        console.log("Chatbot error:", err);
+        document.getElementById("chatbotAnswer").innerText = "Unable to answer right now.";
+      }
+    }
+
+    function clearChatbotAnswer() {
+      document.getElementById("chatbotQuestion").value = "";
+      document.getElementById("chatbotAnswer").innerText = "Your answer will appear here.";
+    }
+
+    async function saveSummary() {
+      const user = JSON.parse(localStorage.getItem("user"));
+
+      if (!currentData) {
+        alert("No result available to save.");
+        return;
+      }
+
+      if (!user || (!user._id && !user.id)) {
+        alert("User not found. Please login again.");
+        return;
+      }
+
+      let originalText = "";
+      if (currentFeature === "summary") originalText = document.getElementById("text").value.trim();
+      else if (currentFeature === "grammar") originalText = document.getElementById("grammarText").value.trim();
+      else if (currentFeature === "translate") originalText = document.getElementById("translateText").value.trim();
+      else if (currentFeature === "pdf") originalText = "[PDF Uploaded Content]";
+      else if (currentFeature === "chatbot") originalText = document.getElementById("chatbotQuestion").value.trim();
+
+      try {
+        const res = await fetch(`${BASE_URL}/api/summary/save`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user._id || user.id,
+            text: originalText,
+            summary: currentData.summary,
+            points: currentData.points || []
+          })
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          alert("Saved successfully!");
+        } else {
+          alert(data.message || "Save failed.");
+        }
+      } catch (err) {
+        console.log("Save error:", err);
+        alert("Save failed.");
+      }
+    }
+
+    function copyOutput() {
+      if (!currentData || !currentData.summary) {
+        alert("No result available to copy.");
+        return;
+      }
+
+      let textToCopy = currentData.summary;
+
+      if (currentData.points && currentData.points.length > 0) {
+        textToCopy += "\n\nDetails:\n";
+        currentData.points.forEach((item, index) => {
+          textToCopy += `${index + 1}. ${item}\n`;
+        });
+      }
+
+      navigator.clipboard.writeText(textToCopy)
+        .then(() => alert("Copied!"))
+        .catch(() => alert("Copy failed."));
+    }
+
+    function startListening() {
+      const status = document.getElementById("voiceStatus");
+      const textBox = document.getElementById("text");
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+      if (!SpeechRecognition) {
+        alert("Voice input is not supported in this browser.");
+        return;
+      }
+
+      if (isListening) return;
+
+      recognition = new SpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.interimResults = false;
+      recognition.continuous = true;
+
+      recognition.start();
+      isListening = true;
+      status.innerText = "Listening... Speak now";
+
+      recognition.onresult = function(event) {
+        let transcript = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript + " ";
+        }
+        textBox.value = (textBox.value + " " + transcript.trim()).trim();
+      };
+
+      recognition.onerror = function(event) {
+        console.log("Voice input error:", event.error);
+        status.innerText = "Voice input failed";
+        isListening = false;
+      };
+
+      recognition.onend = function() {
+        if (isListening) {
+          status.innerText = "Voice input stopped";
+          isListening = false;
+        }
+      };
+    }
+
+    function stopListening() {
+      const status = document.getElementById("voiceStatus");
+      if (recognition && isListening) {
+        recognition.stop();
+        isListening = false;
+        status.innerText = "Voice input is off";
+      }
+    }
+
+    function applyTheme(theme) {
+      const body = document.getElementById("pageBody");
+      const leftNav = document.getElementById("leftNav");
+      const workspaceCard = document.getElementById("workspaceCard");
+      const outputCard = document.getElementById("outputCard");
+      const heroTitle = document.getElementById("heroTitle");
+      const heroDesc = document.getElementById("heroDesc");
+      const output = document.getElementById("output");
+      const themeBtn = document.getElementById("themeBtn");
+
+      if (theme === "dark") {
+        body.className = "min-h-screen bg-slate-950 text-white";
+        if (leftNav) leftNav.className = "hidden lg:flex w-24 bg-black border-r border-slate-800 flex-col items-center py-6";
+        if (workspaceCard) workspaceCard.className = "bg-slate-900 rounded-[30px] border border-slate-700 shadow-sm p-5 md:p-6";
+        if (outputCard) outputCard.className = "bg-slate-900 rounded-[30px] border border-slate-700 shadow-sm p-6 sticky top-6";
+        if (heroTitle) heroTitle.className = "text-4xl md:text-6xl font-bold tracking-tight text-white";
+        if (heroDesc) heroDesc.className = "max-w-4xl mx-auto mt-4 text-lg md:text-xl text-slate-400 leading-8";
+        if (output) output.className = "text-slate-100 leading-7";
+        if (themeBtn) themeBtn.innerText = "☀️";
+      } else {
+        body.className = "min-h-screen bg-[#f6f3ec] text-slate-900";
+        if (leftNav) leftNav.className = "hidden lg:flex w-24 bg-[#f2efe8] border-r border-slate-200 flex-col items-center py-6";
+        if (workspaceCard) workspaceCard.className = "bg-white rounded-[30px] border border-slate-200 shadow-sm p-5 md:p-6";
+        if (outputCard) outputCard.className = "bg-white rounded-[30px] border border-slate-200 shadow-sm p-6 sticky top-6";
+        if (heroTitle) heroTitle.className = "text-4xl md:text-6xl font-bold tracking-tight text-slate-900";
+        if (heroDesc) heroDesc.className = "max-w-4xl mx-auto mt-4 text-lg md:text-xl text-slate-600 leading-8";
+        if (output) output.className = "text-slate-800 leading-7";
+        if (themeBtn) themeBtn.innerText = "🌙";
+      }
+
+      setActiveFeature();
+    }
+
+    function toggleTheme() {
+      currentTheme = currentTheme === "light" ? "dark" : "light";
+      localStorage.setItem("theme", currentTheme);
+      applyTheme(currentTheme);
+    }
+
+    const savedFeature = sessionStorage.getItem("activeFeature") || "summary";
+    switchFeature(savedFeature);
+    setSummaryMode("paragraph");
+    applyTheme(currentTheme);
+  </script>
+</body>
+</html>
